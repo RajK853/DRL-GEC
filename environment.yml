@@ -1,0 +1,22 @@
+name: drl-gec
+channels:
+  - pytorch
+  - conda-forge
+  - defaults
+  - huggingface
+dependencies:
+  - python=3.8.13
+  - ipykernel=6.9.1
+  - pip>=20.3.3
+  - cudatoolkit=11.6
+  - pytorch=1.12.0
+  - torchaudio=1.12.0
+  - torchvision=1.13.0
+  - transformers=4.21.0
+  - pip:
+    - nltk==3.7
+    - tqdm==4.62.3
+    - gym[all]==0.24.0
+    - pyspellchecker==0.6.3
+    - ansi2html==1.8.0
+    - streamlit==1.11.1
