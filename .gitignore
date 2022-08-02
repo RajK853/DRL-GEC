@@ -127,3 +127,11 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+# PyCharm directory
+.idea
+
+# Data directory
+data/*
+!data/vocabs
+*/.ipynb_checkpoints
