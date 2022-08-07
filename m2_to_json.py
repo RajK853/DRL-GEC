@@ -58,12 +58,16 @@ def apply(tokens, edits):
 
 
 def gen_references(text, all_edits):
-    tokens = text.split()
     if all_edits:
-        token_refs = [apply(tokens, edits) for edits in all_edits]
+        tokens = text.split()
+        references = []
+        for edits in all_edits:
+            ref_tokens = apply(tokens, edits)
+            ref_text = clean_text(" ".join(ref_tokens))
+            references.append(ref_text)
     else:
-        token_refs = [tokens]
-    return [" ".join(toks) for toks in token_refs]
+        references = [text]
+    return references
 
 
 def similar_ratio(text_a, text_b):
@@ -109,7 +113,6 @@ def process_sent(text, annot_edits, checker, min_len, max_len, min_sim, only_pro
         text = correct_spelling(checker, text)
     all_edits = filter_duplicate(annot_edits)
     references = gen_references(text, all_edits)
-    references = [clean_text(ref_sent) for ref_sent in references]
     # Filter sentence based on whether any of the references is not a proper sentence
     if only_proper_sent and any(not check_proper_sent(ref_sent) for ref_sent in references):
         return "Improper Sentence"
@@ -120,7 +123,16 @@ def process_sent(text, annot_edits, checker, min_len, max_len, min_sim, only_pro
     return {"test": text, "references": references}
 
 
-def main(m2_path, json_path, min_len=5, max_len=50, min_sim=0.5, only_proper_sent=True, spell_check=True):
+def main(
+        m2_path,
+        json_dir,
+        min_len=5,
+        max_len=50,
+        min_sim=0.5,
+        only_proper_sent=True,
+        spell_check=True,
+        remove_ellipsis=True
+):
     print(TITLE)
     json_data = []
     stats = defaultdict(int)
@@ -135,20 +147,31 @@ def main(m2_path, json_path, min_len=5, max_len=50, min_sim=0.5, only_proper_sen
     print("Report of filtered sentences.")
     for key, value in stats.items():
         print(f"{key:>25}: {value}")
-    os.makedirs(os.path.dirname(json_path), exist_ok=True)
-    write_json(json_path, json_data)
+    os.makedirs(json_dir, exist_ok=True)
+    params = {
+        "min_len": min_len,
+        "max_len": max_len,
+        "min_sim": min_sim,
+        "spell_check": spell_check,
+        "remove_ellipsis": remove_ellipsis,
+        "only_proper_sent": only_proper_sent,
+    }
+    write_json(os.path.join(json_dir, "params.json"), params)
+    write_json(os.path.join(json_dir, "metadata.json"), stats)
+    write_json(os.path.join(json_dir, "data.json"), json_data)
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('--m2_path', help='Path to the input M2 file', required=True)
-    parser.add_argument('--json_path', help='Path to the output JSON file', required=True)
+    parser.add_argument('--json_dir', help='Directory path to the output JSON files', required=True)
     parser.add_argument('--min_len', type=int, help='Min number of tokens in original sentence', default=5)
     parser.add_argument('--max_len', type=int, help='Max number of tokens in original sentence', default=50)
     parser.add_argument('--min_sim', type=float, help='Min avg similarity between original and references', default=0.5)
     parser.add_argument('--only_proper_sent', help='Allow only proper reference sentences', action="store_true")
     parser.add_argument('--spell_check', help='Allow only proper reference sentences', action="store_true")
-    parser.set_defaults(only_proper_sent=True)
+    parser.add_argument('--remove_ellipsis', help='Remove (source) sentences with ellipsis', action="store_true")
+    parser.set_defaults(only_proper_sent=True, spell_check=True, remove_ellipsis=True)
     # Convert parsed arguments into key-worded arguments
     kwargs = parser.parse_args().__dict__
     main(**kwargs)
