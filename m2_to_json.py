@@ -120,7 +120,7 @@ def process_sent(text, annot_edits, checker, min_len, max_len, min_sim, only_pro
     mean_sim = sum(similar_ratio(text, ref_sent) for ref_sent in references) / len(references)
     if mean_sim < min_sim:
         return "Source-Reference Similarity"
-    return {"test": text, "references": references}
+    return {"text": text, "references": references}
 
 
 def main(
@@ -146,7 +146,7 @@ def main(
     print(f"Number of sentences: {len(json_data)}")
     print("Report of filtered sentences.")
     for key, value in stats.items():
-        print(f"{key:>25}: {value}")
+        print(f"{key:>30}: {value}")
     os.makedirs(json_dir, exist_ok=True)
     params = {
         "min_len": min_len,
