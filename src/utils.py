@@ -4,6 +4,49 @@ import logging
 import numpy as np
 from typing import Tuple
 
+# Punctuation normalisation dictionary derived from the BEA2019 Shared Task style JSON to M2 conversion script
+NORM_DICT = {
+    "’": "'",
+    "´": "'",
+    "‘": "'",
+    "′": "'",
+    "`": "'",
+    '“': '"',
+    '”': '"',
+    '˝': '"',
+    '¨': '"',
+    '„': '"',
+    '『': '"',
+    '』': '"',
+    '–': '-',
+    '—': '-',
+    '―': '-',
+    '¬': '-',
+    '、': ',',
+    '，': ',',
+    '：': ':',
+    '；': ';',
+    '？': '?',
+    '！': '!',
+    'ِ': '',
+    '\u200b': ''
+}
+NORM_DICT = {ord(k): v for k, v in NORM_DICT.items()}
+REPLACE_DICT = {
+    '``': '"',
+    "''": '"',
+}
+
+
+def clean_text(text):
+    """
+    Cleans the raw text characters
+    """
+    text = text.translate(NORM_DICT)       # Normalize punctuations
+    for old, new in REPLACE_DICT.items():
+        text = text.replace(old, new)
+    return text
+
 
 def load_json(data_path):
     with open(data_path, "r") as fp:
