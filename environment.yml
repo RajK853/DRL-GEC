@@ -17,6 +17,7 @@ dependencies:
     - nltk==3.7
     - tqdm==4.62.3
     - gym[all]==0.24.0
-    - pyspellchecker==0.6.3
     - ansi2html==1.8.0
     - streamlit==1.11.1
+    - autocorrect==2.6.1
+  
