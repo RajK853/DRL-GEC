@@ -9,7 +9,6 @@ from nltk.translate.gleu_score import sentence_gleu
 from ..utils import decode, load_json, load_text
 
 ROOT_PATH = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
-DEFAULT_DATA_PATH = os.path.join(ROOT_PATH, r"data/processed/sample_data/data.json")    # TODO: Change this later
 DEFAULT_LABELS_PATH = os.path.join(ROOT_PATH, r"data/vocabs/labels.txt")
 DEFAULT_REWARD_CONFIG = {
     "gleu_score": 1.0,
@@ -31,11 +30,11 @@ class GECEnv(Env):
 
     def __init__(
             self,
+            data_path,
             max_episode_steps=5,
             render_mode="ansi",
             reward_config=None,
             label_path=DEFAULT_LABELS_PATH,
-            data_path=DEFAULT_DATA_PATH
     ):
         labels = load_text(label_path)
         self.data = load_json(data_path)
@@ -180,6 +179,24 @@ register(
     id="lang8_gec-v0",
     entry_point="src.envs:GECEnv",
     kwargs={
-        "data_path": DEFAULT_DATA_PATH,
+        "data_path": os.path.join(ROOT_PATH, r"data/processed/lang8/data.json"),
+    }
+)
+
+
+register(
+    id="fce_gec-v0",
+    entry_point="src.envs:GECEnv",
+    kwargs={
+        "data_path": os.path.join(ROOT_PATH, r"data/processed/fce/data.json"),
+    }
+)
+
+
+register(
+    id="wi_locness_gec-v0",
+    entry_point="src.envs:GECEnv",
+    kwargs={
+        "data_path": os.path.join(ROOT_PATH, r"data/processed/wi+locness/data.json"),
     }
 )
