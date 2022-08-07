@@ -9,18 +9,18 @@ from nltk.translate.gleu_score import sentence_gleu
 from ..utils import decode, load_json, load_text
 
 ROOT_PATH = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
-DEFAULT_DATA_PATH = os.path.join(ROOT_PATH, r"data/sample_data/data.json")    # TODO: Change this later
+DEFAULT_DATA_PATH = os.path.join(ROOT_PATH, r"data/processed/sample_data/data.json")    # TODO: Change this later
 DEFAULT_LABELS_PATH = os.path.join(ROOT_PATH, r"data/vocabs/labels.txt")
 DEFAULT_REWARD_CONFIG = {
     "gleu_score": 1.0,
-    "delay_penalty": -0.5,
-    "invalid_label_penalty": -0.5,
+    "delay_penalty": -0.1,
+    "invalid_label_penalty": -0.2,
 }
 OUTPUT_TEXT_FMT = """
 \x1b[37;1mTimestep:\x1b[0m {0}
 \x1b[37;1mRewards:\x1b[0m {1}
 \x1b[37;1mSource:\x1b[0m {2}
-\x1b[37;1mTarget:\x1b[0m {3}
+\x1b[37;1mOutput:\x1b[0m {3}
 """
 
 
@@ -29,26 +29,33 @@ class GECEnv(Env):
         "render_modes": ["human", "ansi", "rgb_array"],
     }
 
-    def __init__(self, max_episode_steps=5, render_mode="ansi", reward_config=None, **kwargs):
-        labels = load_text(kwargs.get("label_path", DEFAULT_LABELS_PATH))
-        self.data = load_json(kwargs.get("data_path", DEFAULT_DATA_PATH))
+    def __init__(
+            self,
+            max_episode_steps=5,
+            render_mode="ansi",
+            reward_config=None,
+            label_path=DEFAULT_LABELS_PATH,
+            data_path=DEFAULT_DATA_PATH
+    ):
+        labels = load_text(label_path)
+        self.data = load_json(data_path)
         self.num_actions = len(labels)
         self.labels = np.char.array(labels, unicode=True)
         self.action_space = spaces.Discrete(self.num_actions)
         self.observation_space = spaces.Discrete(1)
-        self.reward_config = DEFAULT_REWARD_CONFIG
+        self.reward_config = DEFAULT_REWARD_CONFIG.copy()
         if reward_config:
             self.reward_config.update(reward_config)
         self.max_episode_steps = max_episode_steps  # TODO: Maybe not needed?
-
+        # Render configs
+        self.render_mode = render_mode
+        self.renderer = Renderer(self.render_mode, self._render)
+        # Data configs
+        self.data_i = 0
         self.num_sents = len(self.data)
         self.data_indexes = np.arange(self.num_sents, dtype="uint32")
         np.random.shuffle(self.data_indexes)
 
-        self.render_mode = render_mode
-        self.renderer = Renderer(self.render_mode, self._render)
-
-        self.data_i = 0
         self.episode_steps = 0
         self.last_tokens = None
         self.last_labels = None
@@ -170,6 +177,9 @@ class GECEnv(Env):
 
 
 register(
-    id="gec-v0",
+    id="lang8_gec-v0",
     entry_point="src.envs:GECEnv",
+    kwargs={
+        "data_path": DEFAULT_DATA_PATH,
+    }
 )
