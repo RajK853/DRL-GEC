@@ -88,12 +88,6 @@ def check_ellipsis(text):
     return bool(re.search(ELLIPSIS_PATTERN, text))
 
 
-def correct_spelling_old(checker, text):
-    tokens = text.split()
-    misspelled = checker.unknown(tokens)
-    return " ".join(checker.correction(tok) if tok in misspelled else tok for tok in tokens)
-
-
 def correct_spelling(checker, text):
     return checker(text)
 
