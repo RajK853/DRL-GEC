@@ -2,10 +2,23 @@ import numpy as np
 from collections import defaultdict
 
 
+DEFAULT_WEIGHTS = {
+    "$KEEP": 5.0,
+    "$MERGE": 0.1,
+    "$DELETE": 0.2,
+    "$APPEND": 1.0,
+    "$REPLACE": 0.5,
+    "$TRANSFORM_SPLIT": 0.2,
+    "$TRANSFORM_CASE": 0.2,
+    "$TRANSFORM_VERB": 0.5,
+    "$TRANSFORM_AGREEMENT": 0.2,
+}
+
+
 class WeightedSampler:
-    def __init__(self, labels, weight_dict):
+    def __init__(self, labels, weight_dict=None):
         self.labels = labels
-        self.weight_dict = weight_dict
+        self.weight_dict = weight_dict or DEFAULT_WEIGHTS
         self.num_labels = len(self.labels)
         self.labels_freq = self.gen_label_dist(labels)
         # Initialize label probabilities
