@@ -107,11 +107,15 @@ def apply_transform_case(tok_text: str, label: str) -> Tuple[str, bool]:
 
 def apply_transform_plural(tok_text: str, label: str) -> Tuple[str, bool]:
     if label == "$TRANSFORM_AGREEMENT_SINGULAR":
-        # TODO: Check if the text ends with s or not
-        return tok_text[:-1], False
+        if tok_text[-1] != "s":
+            return tok_text, True
+        else:
+            return tok_text[:-1], False
     elif label == "$TRANSFORM_AGREEMENT_PLURAL":
-        # TODO: Check if the text ends with s or not
-        return f"{tok_text}s", False
+        if tok_text[-1] == "s":
+            return tok_text, True
+        else:
+            return f"{tok_text}s", False
     else:
         raise ValueError(f"Invalid '$TRANSFORM_AGREEMENT' label. Got '{label}'!")
 
