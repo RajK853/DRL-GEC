@@ -15,8 +15,7 @@ DEFAULT_REWARD_CONFIG = {
     "delay_penalty": -0.1,
     "invalid_label_penalty": -0.2,
 }
-OUTPUT_TEXT_FMT = """
-\x1b[37;1mTimestep:\x1b[0m {0}
+OUTPUT_TEXT_FMT = """\x1b[37;1mTimestep:\x1b[0m {0}
 \x1b[37;1mRewards:\x1b[0m {1}
 \x1b[37;1mSource:\x1b[0m {2}
 \x1b[37;1mOutput:\x1b[0m {3}
@@ -66,8 +65,8 @@ class GECEnv(Env):
         self.episode_steps = 0
         data_index = self.data_indexes[self.data_i]
         data_dict = self.data[data_index]
-        self.current_tokens = self._text_to_tokens(data_dict["text"])
-        self.reference_tokens = [self._text_to_tokens(ref) for ref in data_dict["references"]]
+        self.current_tokens = self.text_to_tokens(data_dict["text"])
+        self.reference_tokens = [self.text_to_tokens(ref) for ref in data_dict["references"]]
         self.last_tokens = self.current_tokens
         self.last_labels = ["$KEEP"] * len(self.current_tokens)
         invalid_label_masks = np.zeros(len(self.current_tokens), dtype="uint32")
@@ -152,19 +151,19 @@ class GECEnv(Env):
                     token = f"{token} [{action}]"
                 rewards.append(reward)
                 src_tokens.append(token)
-            src_text = self._tokens_to_text(src_tokens)
-            trg_text = self._tokens_to_text(self.current_tokens)
+            src_text = self.tokens_to_text(src_tokens)
+            trg_text = self.tokens_to_text(self.current_tokens)
             rewards_text = ", ".join(rewards)
             out_text = OUTPUT_TEXT_FMT.format(self.episode_steps, rewards_text, src_text, trg_text)
             outfile.write(out_text)
             return outfile.getvalue()
 
     @staticmethod
-    def _text_to_tokens(text):
+    def text_to_tokens(text):
         return text.split()
 
     @staticmethod
-    def _tokens_to_text(tokens):
+    def tokens_to_text(tokens):
         return " ".join(tokens)
 
     def _check_done(self):
