@@ -13,7 +13,8 @@ TITLE = """
 # Process M2 to JSON #
 ######################
 """
-ELLIPSIS_PATTERN = r"(\.\s){2,}"         # Two or more sequence of ". "
+ELLIPSIS_PATTERN = r"(\.\s){2,}"          # Two or more sequence of ". "
+PARENTHESIS_PATTERN = r"\((.*?)\)(\s)*"   # From "This is ok ( I guess ) ." match "( I guess ) "
 
 
 def m2_parser(data_path):
@@ -92,17 +93,22 @@ def correct_spelling(checker, text):
     return checker(text)
 
 
+def remove_parenthetical_text(text):
+    return re.sub(PARENTHESIS_PATTERN, "", text)
+
+
 def process_sent(text, annot_edits, checker, min_len, max_len, min_sim, only_proper_sent, spell_check=False):
     # Filter sentence with ellipsis
     if check_ellipsis(text):
         return "Ellipsis"
+    text = clean_text(text)
+    text = remove_parenthetical_text(text)                      # TODO: Remove only if present in reference
     # Filter sentence based on number of tokens
     num_tokens = len(text.split())
     if num_tokens < min_len:
         return "Less Tokens"
     elif num_tokens > max_len:
         return "More Tokens"
-    text = clean_text(text)
     if spell_check:
         text = correct_spelling(checker, text)
     all_edits = filter_duplicate(annot_edits)
@@ -110,10 +116,11 @@ def process_sent(text, annot_edits, checker, min_len, max_len, min_sim, only_pro
     # Filter sentence based on whether any of the references is not a proper sentence
     if only_proper_sent and any(not check_proper_sent(ref_sent) for ref_sent in references):
         return "Improper Sentence"
-    # Filter sentence based on the mean similarity between the original and reference sentences
-    mean_sim = sum(similar_ratio(text, ref_sent) for ref_sent in references) / len(references)
-    if mean_sim < min_sim:
-        return "Source-Reference Similarity"
+    if all_edits:
+        # Filter sentence based on the mean similarity between the original and reference sentences
+        mean_sim = sum(similar_ratio(text, ref_sent) for ref_sent in references) / len(references)
+        if mean_sim < min_sim:
+            return "Source-Reference Similarity"
     return {"text": text, "references": references}
 
 
@@ -161,7 +168,7 @@ if __name__ == "__main__":
     parser.add_argument('--json_dir', help='Directory path to the output JSON files', required=True)
     parser.add_argument('--min_len', type=int, help='Min number of tokens in original sentence', default=5)
     parser.add_argument('--max_len', type=int, help='Max number of tokens in original sentence', default=50)
-    parser.add_argument('--min_sim', type=float, help='Min avg similarity between original and references', default=0.5)
+    parser.add_argument('--min_sim', type=float, help='Min avg similarity between original and references', default=0.8)
     parser.add_argument('--only_proper_sent', help='Allow only proper reference sentences', action="store_true")
     parser.add_argument('--spell_check', help='Allow only proper reference sentences', action="store_true")
     parser.add_argument('--remove_ellipsis', help='Remove (source) sentences with ellipsis', action="store_true")
