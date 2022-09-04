@@ -35,6 +35,7 @@ def test_ellipsis():
 
 def test_spell_correction():
     typo_correct_pairs = (
+        #   Sentence with typo           Corrected Sentence
         ("This is not acceptible .", "This is not acceptable ."),
         ("I do not have that in calender .", "I do not have that in calendar ."),
         ("Aggreement is not possible .", "Agreement is not possible ."),
