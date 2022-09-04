@@ -3,16 +3,16 @@ from typing import List, Tuple
 from collections import deque
 from dataclasses import dataclass
 
-from src.envs.gec_env import TOKENS, ACTIONS
+from src.envs.gec_env import Tokens, Actions
 
 
 @dataclass(frozen=True)
 class BatchSample:
     __slots__ = ["states", "actions", "rewards", "next_states", "is_terminals"]
-    states: Tuple[TOKENS]
-    actions: Tuple[ACTIONS]
+    states: Tuple[Tokens]
+    actions: Tuple[Actions]
     rewards: Tuple[float]
-    next_states: Tuple[TOKENS]
+    next_states: Tuple[Tokens]
     is_terminals: Tuple[bool]
 
     def __len__(self) -> int:
@@ -28,7 +28,7 @@ class ReplayBuffer:
     def __len__(self):
         return len(self.buffer)
 
-    def add(self, state: TOKENS, action: ACTIONS, reward: float, next_state: TOKENS, is_terminal: bool):
+    def add(self, state: Tokens, action: Actions, reward: float, next_state: Tokens, is_terminal: bool):
         self.buffer.append((state, action, reward, next_state, is_terminal))
         if len(self) >= self.max_len:
             self.pop_oldest()

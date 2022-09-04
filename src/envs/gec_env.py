@@ -12,9 +12,9 @@ from ..tokenizers import Tokenizer, WSTokenizer
 from ..utils import decode, load_json, load_text, START_TOKEN
 
 # Global variables
-TOKENS = List[str]
-ACTIONS = np.ndarray
-LABELS = np.char.array
+Tokens = List[str]
+Actions = np.ndarray
+Labels = np.char.array
 ROOT_PATH = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
 DEFAULT_LABELS_PATH = os.path.join(ROOT_PATH, r"data/vocabs/labels.txt")
 MAX_EPISODE_STEPS = 5
@@ -76,7 +76,7 @@ class GECEnv(Env):
         self._current_tokens = None
         self._reference_tokens_list = None
 
-    def reset(self, *, seed=None, return_info=False, options=None) -> TOKENS:
+    def reset(self, *, seed=None, return_info=False, options=None) -> Tokens:
         # Select new source-reference pair
         self.data_i = self.index_sampler.sample()    # Obtain data index
         data_dict = self.data[self.data_i]           # Obtain data dict with source-reference
@@ -101,7 +101,7 @@ class GECEnv(Env):
         self.renderer.render_step()
         return self._current_tokens
 
-    def step(self, actions: ACTIONS) -> Tuple[TOKENS, float, bool, Dict[str, Any]]:
+    def step(self, actions: Actions) -> Tuple[Tokens, float, bool, Dict[str, Any]]:
         assert len(self._current_tokens) == len(actions), "Number of current tokens and actions are not same!"
         labels = self.labels[actions]         # Obtain labels from actions; ["$KEEP", .., "$DELETE"] from [0, .., 1]
         new_tokens, invalid_label_masks = decode(self._current_tokens, labels)  # Apply the labels
@@ -116,14 +116,14 @@ class GECEnv(Env):
         self.renderer.render_step()
         return self._current_tokens, reward, done, {}
 
-    def _compute_gleu_score(self, labels: LABELS) -> float:
+    def _compute_gleu_score(self, labels: Labels) -> float:
         new_tokens, invalid_label_masks = decode(self._current_tokens, labels)
         state_gleu = sentence_gleu([self._current_tokens], new_tokens)
         ref_gleu = sentence_gleu(self._reference_tokens_list, new_tokens)
         reward = (state_gleu + 2 * ref_gleu) / 3                          # TODO: Remove hard-coding
         return reward
 
-    def compute_reward(self, labels: LABELS, invalid_label_masks: np.ndarray) -> float:
+    def compute_reward(self, labels: Labels, invalid_label_masks: np.ndarray) -> float:
         gleu_rewards = self.reward_config["gleu_score"] * self._compute_gleu_score(labels)
         delay_penalty = self.reward_config["delay_penalty"]
         invalid_label_penalty = self.reward_config["invalid_label_penalty"] * np.mean(invalid_label_masks)
@@ -144,7 +144,7 @@ class GECEnv(Env):
             raise NotImplementedError(f"'{mode}' mode not implemented yet")
 
     @staticmethod
-    def format_tokens(tokens: TOKENS, labels: LABELS) -> TOKENS:
+    def format_tokens(tokens: Tokens, labels: Labels) -> Tokens:
         """
         Colorize the updated tokens
         """

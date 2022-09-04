@@ -5,7 +5,7 @@ from typing import List, Dict, Any
 from src.sampler import TopCategorySampler
 from src.replay_buffer import BatchSample
 from src.utils import stack_padding, freeze
-from src.envs.gec_env import TOKENS, ACTIONS
+from src.envs.gec_env import Tokens, Actions
 from src.models import PretrainedEncoder, Seq2Labels, Seq2LabelsV2
 
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
@@ -76,7 +76,7 @@ class DDQN:
         self.optim.step()
         return loss
 
-    def select_action(self, state: TOKENS, eps: float = 0.0) -> ACTIONS:
+    def select_action(self, state: Tokens, eps: float = 0.0) -> Actions:
         with torch.no_grad():
             [q_values] = self.q_model([state]).cpu().numpy()
             if np.random.random() <= eps:

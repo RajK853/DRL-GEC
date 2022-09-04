@@ -5,6 +5,7 @@ from tqdm.auto import tqdm
 from autocorrect import Speller
 from difflib import SequenceMatcher
 from collections import defaultdict
+from typing import Dict, List, Tuple, Union
 
 from src.utils import write_json, clean_text
 
@@ -15,9 +16,13 @@ TITLE = """
 """
 ELLIPSIS_PATTERN = r"(\.\s){2,}"          # Two or more sequence of ". "
 PARENTHESIS_PATTERN = r"\((.*?)\)(\s)*"   # From "This is ok ( I guess ) ." match "( I guess ) "
+Edit = Tuple[int, int, str]
 
 
-def m2_parser(data_path):
+def m2_parser(data_path: str) -> Tuple[str, Dict[int, List[Edit]]]:
+    """
+    Extract sentence and annotator edits from the M2 file
+    """
     orig_sent = None
     annotator_edits = defaultdict(list)
     with open(data_path, "r") as fp:
@@ -39,7 +44,10 @@ def m2_parser(data_path):
                 annotator_edits = defaultdict(list)
 
 
-def filter_duplicate(annot_edits):
+def filter_duplicate(annot_edits: Dict[int, List[Edit]]) -> List[List[Edit]]:
+    """
+    Remove duplicate annotator edits
+    """
     all_edits = []
     for edits in annot_edits.values():
         if edits not in all_edits:
@@ -47,7 +55,10 @@ def filter_duplicate(annot_edits):
     return all_edits
 
 
-def apply(tokens, edits):
+def apply(tokens: List[str], edits: List[Edit]) -> List[str]:
+    """
+    Apply the annotator edits to the source tokens to generate new tokens
+    """
     tokens = tokens.copy()
     for edit in reversed(edits):
         i, j, span = edit
@@ -58,7 +69,10 @@ def apply(tokens, edits):
     return tokens
 
 
-def gen_references(text, all_edits):
+def gen_references(text: str, all_edits: List[List[Edit]]) -> List[str]:
+    """
+    Generate reference sentences from given text and edits
+    """
     if all_edits:
         tokens = text.split()
         references = []
@@ -71,33 +85,60 @@ def gen_references(text, all_edits):
     return references
 
 
-def similar_ratio(text_a, text_b):
+def similar_ratio(text_a: str, text_b: str) -> float:
+    """
+    Calculate token-based similarity between two texts
+    """
     tokens_a = text_a.split()
     tokens_b = text_b.split()
     return SequenceMatcher(None, tokens_a, tokens_b).ratio()
 
 
-def check_proper_sent(text):
+def check_proper_sent(text: str) -> bool:
+    """
+    Check that the sentence starts and ends properly
+    """
     tokens = text.split()
     if not tokens:
         return False
-    # First token is Capitalized and ending character of last token is one of the given characters
+    # First token is Capitalized and the ending character of last token is one of the given characters
     return tokens[0].istitle() and tokens[-1][-1] in '.!?"'
 
 
-def check_ellipsis(text):
+def check_ellipsis(text: str) -> bool:
+    """
+    Check if the sentence has any ellipsis
+    """
     return bool(re.search(ELLIPSIS_PATTERN, text))
 
 
-def correct_spelling(checker, text):
+def correct_spelling(checker: Speller, text: str) -> str:
+    """
+    Correct any typos from the sentence
+    """
     return checker(text)
 
 
-def remove_parenthetical_text(text):
+def remove_parenthetical_text(text: str) -> str:
+    """
+    Remove parenthetical texts i.e. from "I am fine (or not)." to "I am fine."
+    """
     return re.sub(PARENTHESIS_PATTERN, "", text)
 
 
-def process_sent(text, annot_edits, checker, min_len, max_len, min_sim, only_proper_sent, spell_check=False):
+def process_sent(
+        text: str,
+        annot_edits: Dict[int, List[Edit]],
+        checker: Speller,
+        min_len: int,
+        max_len: int,
+        min_sim: float,
+        only_proper_sent: bool,
+        spell_check: bool = False,
+) -> Union[str, Dict[str, str]]:
+    """
+    Process a given sentence
+    """
     # Filter sentence with ellipsis
     if check_ellipsis(text):
         return "Ellipsis"
@@ -125,14 +166,14 @@ def process_sent(text, annot_edits, checker, min_len, max_len, min_sim, only_pro
 
 
 def main(
-        m2_path,
-        json_dir,
-        min_len=5,
-        max_len=50,
-        min_sim=0.5,
-        only_proper_sent=True,
-        spell_check=True,
-        remove_ellipsis=True
+        m2_path: str,
+        json_dir: str,
+        min_len: int = 5,
+        max_len: int = 50,
+        min_sim: float = 0.5,
+        only_proper_sent: bool = True,
+        spell_check: bool = True,
+        remove_ellipsis: bool = True,
 ):
     print(TITLE)
     json_data = []
