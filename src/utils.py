@@ -4,7 +4,7 @@ import unicodedata
 import numpy as np
 from torch import Tensor
 import multiprocessing as mp
-from typing import Tuple, Iterable, List, Dict, Any
+from typing import Tuple, Iterable, List, Dict, Any, Union
 from nltk.translate.gleu_score import sentence_gleu
 
 ROOT_PATH = os.path.dirname(os.path.dirname(__file__))
@@ -54,8 +54,8 @@ def freeze(params: Iterable[Tensor], requires_grad: bool = False):
 
 def stack_padding(it, dtype="float32"):
     """
-    Original Source:
-    https://stackoverflow.com/a/53052599
+    Stack and pad arrays to match the length of the longest array
+    Source: https://stackoverflow.com/a/53052599
     """
     def resize(row, size):
         new = np.array(row)
@@ -86,7 +86,7 @@ def load_json(data_path: str) -> Dict[Any, Any]:
         return json.load(fp)
 
 
-def write_json(data_path: str, data: Dict[Any, Any], indent: int = 4, **kwargs):
+def write_json(data_path: str, data: Union[dict, Iterable[dict]], indent: int = 4, **kwargs):
     """
     Write to a JSON file
     """
@@ -106,7 +106,7 @@ def load_text(data_path: str) -> List[str]:
 def get_verb_form_dicts():
     """
     Obtain verb transformation dictionaries
-    https://github.com/grammarly/gector/blob/daf42a1b48574523b77fd25b05ededefc79d5b2e/utils/helpers.py#L20
+    Source: https://github.com/grammarly/gector/blob/daf42a1b48574523b77fd25b05ededefc79d5b2e/utils/helpers.py#L20
     """
     encoded_verbs, decoded_verbs = {}, {}
     with open(VERB_VOCAB_PATH, "r", encoding="utf-8") as fp:
