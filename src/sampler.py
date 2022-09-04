@@ -1,61 +1,94 @@
 import numpy as np
-from collections import defaultdict
+from typing import Dict
+
+LABEL_TYPES = (
+    "$KEEP",
+    "$DELETE",
+    "$APPEND",
+    "$REPLACE",
+    "$MERGE",
+    "$TRANSFORM_SPLIT",
+    "$TRANSFORM_CASE",
+    "$TRANSFORM_VERB",
+    "$TRANSFORM_AGREEMENT",
+)
 
 
-DEFAULT_WEIGHTS = {
-    "$KEEP": 5.0,
-    "$MERGE": 0.1,
-    "$DELETE": 0.2,
-    "$APPEND": 1.0,
-    "$REPLACE": 0.5,
-    "$TRANSFORM_SPLIT": 0.2,
-    "$TRANSFORM_CASE": 0.2,
-    "$TRANSFORM_VERB": 0.5,
-    "$TRANSFORM_AGREEMENT": 0.2,
-}
+class TopCategorySampler:
+    """
+    Category based action sampler
 
-
-class WeightedSampler:
-    def __init__(self, labels, weight_dict=None):
-        self.labels = labels
-        self.weight_dict = weight_dict or DEFAULT_WEIGHTS
-        self.num_labels = len(self.labels)
-        self.labels_freq = self.gen_label_dist(labels)
-        # Initialize label probabilities
-        self.label_probs = None
-        self.init_weights()
-
-    def init_weights(self, weight_dict=None):
-        if weight_dict:
-            self.weight_dict = weight_dict
-        # Normalize weights based on the number of labels i.e. some category like REPLACE or APPEND has multiple labels
-        normalized_weights = {k: v / self.labels_freq[k] for k, v in self.weight_dict.items()}
-        weights = np.ones(self.num_labels, dtype="float32")
-        for i, label in enumerate(self.labels):
-            for label_prefix, weight in normalized_weights.items():
-                if label.startswith(label_prefix):
-                    weights[i] = weight
-                    break
-        self.label_probs = weights / sum(weights)           # Ensure sum(label_probs) == 1.0
+    for each token:
+        tokens_actions = actions with the highest value from each category
+        randomly select one action from token_actions
+    """
+    def __init__(self, labels: np.char.array):
+        self.encoded_labels_dict = self.categorize(labels)
 
     @staticmethod
-    def gen_label_dist(label_list):
-        label_dist = defaultdict(int)
-        for label in label_list:
-            if label in ("$KEEP", "$DELETE"):
-                label_dist[label] += 1
-            elif any(label.startswith(k) for k in ("$REPLACE_", "$APPEND_", "$MERGE_")):
-                label_type, *_ = label.split("_")
-                label_dist[label_type] += 1
-            elif label.startswith("$TRANSFORM_"):
-                label_type = "_".join(label.split("_")[:2])
-                label_dist[label_type] += 1
-            else:
-                raise NotImplementedError(f"Cannot handle {label} label!")
-        return label_dist
+    def categorize(labels: np.char.array) -> Dict[int, np.ndarray]:
+        """
+        Generate label mask for each category
+        """
+        categorized_labels_dict = {}
+        for i, cat in enumerate(LABEL_TYPES):
+            categorized_labels_dict[i] = labels.startswith(cat)
+        return categorized_labels_dict
 
-    def sample(self, size=1):
-        return np.random.choice(self.num_labels, size=size, p=self.label_probs)
+    def sample(self, values: np.ndarray) -> np.ndarray:
+        """
+        Generate action based on given values
+        """
+        num_tokens, num_labels = values.shape
+        action_indexes = np.arange(num_labels)
+        actions = np.zeros(num_tokens, dtype="uint32")
+        for tok_i in range(num_tokens):
+            tok_actions = []                                # Possible actions for current token
+            for cat_mask in self.encoded_labels_dict.values():
+                indexes = action_indexes[cat_mask]          # Action indexes of labels in current category
+                selected_values = values[tok_i, indexes]    # Values of selected actions
+                max_i = np.argmax(selected_values)
+                action_index = indexes[max_i]               # Action index with maximum value
+                tok_actions.append(action_index)
+            actions[tok_i] = np.random.choice(tok_actions)  # Randomly sample action from current token's actions
+        return actions
 
-    def __call__(self, size=1):
-        return self.sample(size)
+
+class IndexSampler:
+    """
+    Generates repeated indexes at given intervals
+    """
+    def __init__(self, indexes: np.ndarray, interval: int, repeat: int = 2):
+        self.indexes = indexes
+        self.interval = interval
+        self.repeat = repeat
+        self.iterator = None
+        self.reset()
+
+    def generate(self):
+        """
+        Generator to initialize the indexes
+        """
+        for i in range(0, len(self.indexes), self.interval):
+            current_indexes = self.indexes[i:i + self.interval]
+            current_indexes = np.tile(current_indexes, self.repeat)    # Repeat the current indexes for N times
+            np.random.shuffle(current_indexes)                         # Shuffle the current indexes
+            for index in current_indexes:
+                yield index
+
+    def reset(self):
+        """
+        Initialize the index generator
+        """
+        np.random.shuffle(self.indexes)                                # Shuffle the entire indexes
+        self.iterator = self.generate()                                # Initialize the generator
+
+    def sample(self) -> int:
+        """
+        Obtain next index
+        """
+        i = next(self.iterator, None)                                  # Obtain the next index
+        if i is None:                                                  # Previous index generator ended
+            self.reset()                                               # Prepare new index generator
+            i = next(self.iterator, None)                              # Obtain the next index from the new generator
+        return i
