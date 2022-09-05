@@ -76,6 +76,10 @@ class GECEnv(Env):
         self._current_tokens = None
         self._reference_tokens_list = None
 
+    @property
+    def reference_tokens_list(self):
+        return self._reference_tokens_list
+
     def reset(self, *, seed=None, return_info=False, options=None) -> Tokens:
         # Select new source-reference pair
         self.data_i = self.index_sampler.sample()    # Obtain data index
