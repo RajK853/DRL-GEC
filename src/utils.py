@@ -2,6 +2,7 @@ import os
 import re
 import json
 import torch
+import socket
 import unicodedata
 import numpy as np
 from torch import Tensor
@@ -58,6 +59,19 @@ START_TOKEN = "$START"
 UNK_TOKEN = "$UNKNOWN"
 LABELS_SEP = "SEPL__SEPR"
 TOK_LABEL_SEP = "SEPL|||SEPR"
+
+
+def is_gce_instance():
+    """
+    Check if it's GCE instance via DNS lookup to metadata server.
+    Source:
+    https://stackoverflow.com/a/58619342
+    """
+    try:
+        socket.getaddrinfo('metadata.google.internal', 80)
+    except socket.gaierror:
+        return False
+    return True
 
 
 def freeze_params(model, requires_grad=False, num_layers=0, optim=None, lr=None):
