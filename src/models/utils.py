@@ -14,7 +14,7 @@ def reduce_last(tensor, align):
 def reduce_mean(tensor, align):
     batch_size, _, encode_size = tensor.shape
     _, seq_size = align.shape
-    tensor_out = torch.zeros(batch_size, seq_size, encode_size, dtype=torch.float32)
+    tensor_out = torch.zeros(batch_size, seq_size, encode_size, dtype=torch.float32, device=tensor.device)
     for batch_i in range(batch_size):
         seq_offset = 0
         for seq_i in range(seq_size):
@@ -32,7 +32,7 @@ def reduce_mean(tensor, align):
 def reduce_sum(tensor, align):
     batch_size, _, encode_size = tensor.shape
     _, seq_size = align.shape
-    tensor_out = torch.zeros(batch_size, seq_size, encode_size, dtype=torch.float32)
+    tensor_out = torch.zeros(batch_size, seq_size, encode_size, dtype=torch.float32, device=tensor.device)
     for batch_i in range(batch_size):
         seq_offset = 0
         for seq_i in range(seq_size):
