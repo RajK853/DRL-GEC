@@ -133,5 +133,7 @@ dmypy.json
 
 # Data directory
 data/*
+notebooks/sl_logs/*
+notebooks/pg_logs/*
 !data/vocabs
 */.ipynb_checkpoints
