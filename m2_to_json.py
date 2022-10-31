@@ -3,9 +3,9 @@ import os
 import argparse
 from tqdm.auto import tqdm
 from autocorrect import Speller
-from difflib import SequenceMatcher
 from collections import defaultdict
 from typing import Dict, List, Tuple, Union
+from cdifflib import CSequenceMatcher as SequenceMatcher
 
 from src.utils import write_json, clean_text
 
@@ -78,7 +78,8 @@ def gen_references(text: str, all_edits: List[List[Edit]]) -> List[str]:
         references = []
         for edits in all_edits:
             ref_tokens = apply(tokens, edits)
-            ref_text = clean_text(" ".join(ref_tokens))
+            ref_text = clean_text(" ".join(ref_tokens), is_ref=True)
+            ref_text = remove_parenthetical_text(ref_text)
             references.append(ref_text)
     else:
         references = [text]
@@ -142,8 +143,8 @@ def process_sent(
     # Filter sentence with ellipsis
     if check_ellipsis(text):
         return "Ellipsis"
-    text = clean_text(text)
-    text = remove_parenthetical_text(text)                      # TODO: Remove only if present in reference
+    text = clean_text(text, is_ref=False)
+    text = remove_parenthetical_text(text)
     # Filter sentence based on number of tokens
     num_tokens = len(text.split())
     if num_tokens < min_len:
@@ -167,15 +168,16 @@ def process_sent(
 
 def main(
         m2_path: str,
-        json_dir: str,
+        json_path: str,
         min_len: int = 5,
         max_len: int = 50,
-        min_sim: float = 0.5,
+        min_sim: float = 0.8,
         only_proper_sent: bool = True,
         spell_check: bool = True,
         remove_ellipsis: bool = True,
 ):
     print(TITLE)
+    assert json_path.lower().endswith(".json"), f"Not a JSON file; got '{json_path}'"
     json_data = []
     stats = defaultdict(int)
     checker = Speller(lang="en", fast=False, threshold=0)
@@ -189,6 +191,7 @@ def main(
     print("Report of filtered sentences.")
     for key, value in stats.items():
         print(f"{key:>30}: {value}")
+    json_dir = os.path.dirname(json_path)
     os.makedirs(json_dir, exist_ok=True)
     params = {
         "min_len": min_len,
@@ -200,13 +203,13 @@ def main(
     }
     write_json(os.path.join(json_dir, "params.json"), params)
     write_json(os.path.join(json_dir, "metadata.json"), stats)
-    write_json(os.path.join(json_dir, "data.json"), json_data)
+    write_json(json_path, json_data)
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('--m2_path', help='Path to the input M2 file', required=True)
-    parser.add_argument('--json_dir', help='Directory path to the output JSON files', required=True)
+    parser.add_argument('--json_path', help='Path to the output JSON files', required=True)
     parser.add_argument('--min_len', type=int, help='Min number of tokens in original sentence', default=5)
     parser.add_argument('--max_len', type=int, help='Max number of tokens in original sentence', default=50)
     parser.add_argument('--min_sim', type=float, help='Min avg similarity between original and references', default=0.8)
