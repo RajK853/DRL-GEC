@@ -17,7 +17,7 @@ dependencies:
     - nltk==3.7
     - tqdm==4.62.3
     - cdifflib==1.2.6
-    - gym[all]==0.24.0
+    - gym==0.25.1
     - ansi2html==1.8.0
     - streamlit>=1.11.1
     - rapidfuzz==2.11.1
