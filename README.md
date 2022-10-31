@@ -1,12 +1,16 @@
 # DRL-GEC
 Grammar Error Correction via Deep Reinforcement Learning
 
-# Conda Environment Setup
+# Setup
+
+## Conda environment
 ```commandline
-cd $ROOT_DIR                            # $ROOT_DIR = Repo directory
+git clone --recurse-submodules git@github.com:RajK853/DRL-GEC.git
+cd DRL-GEC
 conda env create -f environment.yml
 ```
 
+## Install Ipykernel for Jupyter Notebook
 ```commandline
 conda activate drl-gec
 python -m ipykernel install --user --name=drl-gec
