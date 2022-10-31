@@ -1,6 +1,16 @@
 # DRL-GEC
 Grammar Error Correction via Deep Reinforcement Learning
 
+# Conda Environment Setup
+```commandline
+cd $ROOT_DIR                            # $ROOT_DIR = Repo directory
+conda env create -f environment.yml
+```
+
+```commandline
+conda activate drl-gec
+python -m ipykernel install --user --name=drl-gec
+```
 
 # Remove hindi sentences from Lang-8 training dataset
 
