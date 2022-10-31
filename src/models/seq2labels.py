@@ -25,10 +25,9 @@ class PretrainedEncoder(nn.Module):
         # Init tokenizer and transformer
         tokenizer_config = tokenizer_config or DEFAULT_TOKENIZER_CFG.copy()
         transformer_config = transformer_config or DEFAULT_TRANSFORMER_CONFIG.copy()
-        self.tokenizer = AutoTokenizer.from_pretrained(model_name, **tokenizer_config, local_files_only=True)
+        self.tokenizer = AutoTokenizer.from_pretrained(model_name, **tokenizer_config)
         self.config = AutoConfig.from_pretrained(model_name, **transformer_config)
-        self.transformer = AutoModel.from_pretrained(
-                model_name, config=self.config, local_files_only=True, add_pooling_layer=add_pooling_layer)
+        self.transformer = AutoModel.from_pretrained(model_name, config=self.config, add_pooling_layer=add_pooling_layer)
         self.return_offsets_mapping = isinstance(self.tokenizer, PreTrainedTokenizerFast)
         self.add_tokens([START_TOKEN])
 
