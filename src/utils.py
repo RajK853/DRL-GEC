@@ -12,8 +12,6 @@ from typing import Iterable, List, Union
 from rapidfuzz.distance import Levenshtein
 from nltk.translate.gleu_score import sentence_gleu
 
-from gector.utils import preprocess_data
-
 
 ROOT_PATH = os.path.dirname(os.path.dirname(__file__))
 VERB_VOCAB_PATH = os.path.join(ROOT_PATH, r"data/vocabs/verb-form-vocab.txt")
@@ -209,6 +207,8 @@ def minibatch(seqs, size):
 
 
 def is_solvable(text, references, labels):
+    from gector.utils import preprocess_data
+
     for reference in references:
         alignment = preprocess_data.align_sequences(text, reference)
         for tok_label in alignment.split():
