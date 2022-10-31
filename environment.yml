@@ -13,11 +13,15 @@ dependencies:
   - torchaudio=1.12.0
   - torchvision=1.13.0
   - transformers=4.21.0
+  - huggingface_hub=0.2.1
+  - tensorboard=2.8.0
   - pip:
     - nltk==3.7
     - tqdm==4.62.3
+    - cdifflib==1.2.6
     - gym[all]==0.24.0
     - ansi2html==1.8.0
-    - streamlit==1.11.1
+    - streamlit>=1.11.1
+    - rapidfuzz==2.11.1
     - autocorrect==2.6.1
-  
+    - python-Levenshtein==0.12.2
