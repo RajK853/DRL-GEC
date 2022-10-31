@@ -5,18 +5,15 @@ from streamlit import sidebar as sbar
 from ansi2html import Ansi2HTMLConverter
 import streamlit.components.v1 as components
 
-
 import src.envs
-from src.sampler import WeightedSampler
 
 
 def init():
     st.set_page_config(page_title="Interact", page_icon=":snake:", layout="wide")
-
     if "env" not in st.session_state:
         st.session_state.env = None
+        st.session_state.tokenizer = None
         st.session_state.state = None
-        st.session_state.sampler = None
         st.session_state.references = []
         st.session_state.render_outputs = []
         st.session_state.reward_config = None
@@ -25,7 +22,10 @@ def init():
 def reset():
     env = st.session_state.env
     st.session_state.state = env.reset()
-    st.session_state.references = [env.tokens_to_text(ref) for ref in env.reference_tokens]
+    st.session_state.references = [
+        st.session_state.tokenizer.tokens2text(ref_tokens)
+        for ref_tokens in env.reference_tokens_list
+    ]
     ansi_out = env.render()[0]
     st.session_state.render_outputs = [ansi_out]
 
@@ -44,9 +44,8 @@ def select_env():
         if st.session_state.env is not None:
             st.session_state.env.close()
         st.session_state.env = env = gym.make(env_id)
+        st.session_state.tokenizer = env.tokenizer
         st.session_state.reward_config = env.reward_config
-        if st.session_state.sampler is None:
-            st.session_state.sampler = WeightedSampler(env.labels)
         reset()
 
 
@@ -60,14 +59,10 @@ def display_env():
         with cols[0]:
             st.markdown("##### Reward Config:")
             st.json(st.session_state.reward_config, expanded=False)
-    if st.session_state.sampler is not None:
-        with cols[1]:
-            st.markdown("##### Sampler Config:")
-            st.json(st.session_state.sampler.weight_dict, expanded=False)
     if st.session_state.state is not None:
         st.markdown("##### State Info:")
         st.markdown("###### Current State:")
-        current_state = st.session_state.env.tokens_to_text(st.session_state.state)
+        current_state = st.session_state.tokenizer.tokens2text(st.session_state.state)
         st.markdown(f"- {current_state}")
         st.markdown("###### References")
         for ref in st.session_state.references:
@@ -80,9 +75,6 @@ def select_action():
     - Select the tokens to apply labels
     - Select labels for selected tokens
     - Press `Apply Action` button to apply labels on the selected tokens
-    
-    ### Take Random Actions:
-    Press `Random Action` button to apply labels generated randomly using our `WeightedSampler`.
     """
     sbar.header("Action Interface")
     sbar.markdown(info)
@@ -110,16 +102,12 @@ def select_action():
                         key=f"action_{i}",
                         help="Select action for this token"
                 )
-        cols = sbar.columns(2)
-        apply_btn = cols[0].button("Apply Action", key="apply_btn")
-        random_btn = cols[1].button("Random Action", key="random_btn")
-        if random_btn:
-            actions = st.session_state.sampler(len(tokens))
-        if apply_btn or random_btn:
+        apply_btn = sbar.button("Apply Action", key="apply_btn")
+        if apply_btn:
             s, r, d, info = st.session_state.env.step(actions)
             st.session_state.state = s
-            ansi_out = st.session_state.env.render()[0]
-            st.session_state.render_outputs.append(ansi_out)
+            for ansi_out in st.session_state.env.render():
+                st.session_state.render_outputs.append(ansi_out)
 
 
 def render():
