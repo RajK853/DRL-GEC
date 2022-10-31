@@ -7,6 +7,7 @@ channels:
 dependencies:
   - python=3.8.13
   - ipykernel=6.9.1
+  - ipywidgets=7.6.3
   - pip>=20.3.3
   - cudatoolkit=11.6
   - pytorch=1.12.0
