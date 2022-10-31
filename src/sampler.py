@@ -1,67 +1,116 @@
 import numpy as np
-from typing import Dict
+from typing import List
+from functools import lru_cache
+from cdifflib import CSequenceMatcher as SequenceMatcher
 
-LABEL_TYPES = (
-    "$KEEP",
-    "$DELETE",
-    "$APPEND",
-    "$REPLACE",
-    "$MERGE",
-    "$TRANSFORM_SPLIT",
-    "$TRANSFORM_CASE",
-    "$TRANSFORM_VERB",
-    "$TRANSFORM_AGREEMENT",
-)
+# Map edit type to label types
+EDIT2LABELS = {
+    "equal": ["$KEEP"],
+    "delete": ["$DELETE"],
+    "insert": ["$APPEND"],
+    "replace": ["$REPLACE", "$MERGE", "$TRANSFORM", "$UNKNOWN"],
+}
 
 
-class TopCategorySampler:
+class EditMaskGenerator:
     """
-    Category based action sampler
-
-    for each token:
-        tokens_actions = actions with the highest value from each category
-        randomly select one action from token_actions
+    Class to generate edit types based on action indices and labels
     """
-    def __init__(self, labels: np.char.array):
-        self.encoded_labels_dict = self.categorize(labels)
+
+    def __init__(self, labels):
+        self.labels = labels
+        self.encoded_labels = self.encode(labels)
 
     @staticmethod
-    def categorize(labels: np.char.array) -> Dict[int, np.ndarray]:
-        """
-        Generate label mask for each category
-        """
-        categorized_labels_dict = {}
-        for i, cat in enumerate(LABEL_TYPES):
-            categorized_labels_dict[i] = labels.startswith(cat)
-        return categorized_labels_dict
+    def encode(labels: np.char.array) -> np.char.array:
+        encoded_labels = np.char.array(["equal"] * len(labels), itemsize=7)
+        for edit_type, label_types in EDIT2LABELS.items():
+            for label_type in label_types:
+                encoded_labels[labels.startswith(label_type)] = edit_type
+        return encoded_labels
 
-    def sample(self, values: np.ndarray) -> np.ndarray:
+    @staticmethod
+    def get_edit_mask(tokens: List[str], ref_tokens_list: List[List[str]]) -> np.char.array:
         """
-        Generate action based on given values
+        Generate SequenceMatcher edits for given token and references
         """
-        num_tokens, num_labels = values.shape
-        action_indexes = np.arange(num_labels)
-        actions = np.zeros(num_tokens, dtype="uint32")
-        for tok_i in range(num_tokens):
-            tok_actions = []                                # Possible actions for current token
-            for cat_mask in self.encoded_labels_dict.values():
-                indexes = action_indexes[cat_mask]          # Action indexes of labels in current category
-                selected_values = values[tok_i, indexes]    # Values of selected actions
-                max_i = np.argmax(selected_values)
-                action_index = indexes[max_i]               # Action index with maximum value
-                tok_actions.append(action_index)
-            actions[tok_i] = np.random.choice(tok_actions)  # Randomly sample action from current token's actions
+        # Choose reference which is most similar to the tokens
+        if len(ref_tokens_list) == 1:
+            ref_tokens = ref_tokens_list[0]
+        else:
+            sim_scores = [SequenceMatcher(None, tokens, ref_tokens).ratio() for ref_tokens in ref_tokens_list]
+            ref_tokens = ref_tokens_list[np.argmax(sim_scores)]
+        # Generate edit mask
+        edits = SequenceMatcher(None, tokens, ref_tokens).get_opcodes()
+        edit_mask = np.char.array(["equal"] * len(tokens), itemsize=7)
+        for edit in edits:
+            edit_type, i, j, _, _ = edit
+            if edit_type == "equal":
+                continue
+            elif edit_type == "insert" and i == j:
+                i -= 1                                # Adjust i such that tokens[i:j] = token to use the insert edit
+            elif edit_type == "replace" and j-i > 1:  # Change more than 1 consecutive replace edits to mixed edit
+                edit_type = "mixed"
+            edit_mask[i:j] = edit_type
+        return edit_mask
+
+    def actions_to_edits(self, actions: np.array) -> np.char.array:
+        """
+        Convert action indices (int) into edit types (str)
+        """
+        return self.encoded_labels[actions]
+
+    def actions_to_labels(self, actions: np.array) -> np.char.array:
+        """
+        Convert action indices (int) into action labels (str)
+        """
+        return self.labels[actions]
+
+    @lru_cache()
+    def label_to_action(self, label: str) -> int:
+        """
+        Convert a action label into action index
+        """
+        index, *_ = np.where(self.labels == label)
+        return index.item()
+
+    def labels_to_actions(self, labels: np.char.array) -> np.array:
+        """
+        Convert action labels into action indices
+        """
+        return np.vectorize(self.label_to_action)(labels)
+
+    @lru_cache()
+    def edit_to_actions(self, edit: str) -> np.array:
+        """
+        Get the action indices of the action edit type
+        """
+        if edit == "mixed":
+            actions = [np.where(self.encoded_labels == e)[0] for e in ("delete", "insert", "replace")]
+            actions = np.concatenate(actions)
+        else:
+            actions, *_ = np.where(self.encoded_labels == edit)
         return actions
+
+    @lru_cache()
+    def edit_to_labels(self, edit: str) -> np.char.array:
+        """
+        Get the action labels of the action edit type
+        """
+        actions = self.edit_to_actions(edit)
+        labels = self.actions_to_labels(actions)
+        return labels
 
 
 class IndexSampler:
     """
-    Generates repeated indexes at given intervals
+    Class to generate repeated indexes at given intervals
     """
-    def __init__(self, indexes: np.ndarray, interval: int, repeat: int = 2):
+    def __init__(self, indexes: np.ndarray, interval: int, repeat: int = 2, consecutive: bool = True):
         self.indexes = indexes
         self.interval = interval
         self.repeat = repeat
+        self.consecutive = consecutive
         self.iterator = None
         self.reset()
 
@@ -71,10 +120,19 @@ class IndexSampler:
         """
         for i in range(0, len(self.indexes), self.interval):
             current_indexes = self.indexes[i:i + self.interval]
-            current_indexes = np.tile(current_indexes, self.repeat)    # Repeat the current indexes for N times
-            np.random.shuffle(current_indexes)                         # Shuffle the current indexes
-            for index in current_indexes:
-                yield index
+            if self.repeat > 1:
+                if self.consecutive:
+                    for index in current_indexes:
+                        for _ in range(self.repeat):
+                            yield index
+                else:
+                    current_indexes = np.tile(current_indexes, self.repeat)  # Repeat the current indexes for N times
+                    np.random.shuffle(current_indexes)                       # Shuffle the current indexes
+                    for index in current_indexes:
+                        yield index
+            else:
+                for index in current_indexes:
+                    yield index
 
     def reset(self):
         """
