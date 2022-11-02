@@ -3,6 +3,10 @@ from typing import List
 from functools import lru_cache
 from cdifflib import CSequenceMatcher as SequenceMatcher
 
+
+Tokens = List[str]
+Actions = np.ndarray
+Labels = np.char.array
 # Map edit type to label types
 EDIT2LABELS = {
     "equal": ["$KEEP"],
@@ -17,12 +21,12 @@ class EditMaskGenerator:
     Class to generate edit types based on action indices and labels
     """
 
-    def __init__(self, labels):
+    def __init__(self, labels: Labels):
         self.labels = labels
         self.encoded_labels = self.encode(labels)
 
     @staticmethod
-    def encode(labels: np.char.array) -> np.char.array:
+    def encode(labels: Labels) -> Labels:
         encoded_labels = np.char.array(["equal"] * len(labels), itemsize=7)
         for edit_type, label_types in EDIT2LABELS.items():
             for label_type in label_types:
@@ -30,7 +34,7 @@ class EditMaskGenerator:
         return encoded_labels
 
     @staticmethod
-    def get_edit_mask(tokens: List[str], ref_tokens_list: List[List[str]]) -> np.char.array:
+    def get_edit_mask(tokens: Tokens, ref_tokens_list: List[Tokens]) -> Labels:
         """
         Generate SequenceMatcher edits for given token and references
         """
@@ -54,13 +58,13 @@ class EditMaskGenerator:
             edit_mask[i:j] = edit_type
         return edit_mask
 
-    def actions_to_edits(self, actions: np.array) -> np.char.array:
+    def actions_to_edits(self, actions: Actions) -> Labels:
         """
         Convert action indices (int) into edit types (str)
         """
         return self.encoded_labels[actions]
 
-    def actions_to_labels(self, actions: np.array) -> np.char.array:
+    def actions_to_labels(self, actions: Actions) -> Labels:
         """
         Convert action indices (int) into action labels (str)
         """
@@ -74,14 +78,14 @@ class EditMaskGenerator:
         index, *_ = np.where(self.labels == label)
         return index.item()
 
-    def labels_to_actions(self, labels: np.char.array) -> np.array:
+    def labels_to_actions(self, labels: Labels) -> Actions:
         """
         Convert action labels into action indices
         """
         return np.vectorize(self.label_to_action)(labels)
 
     @lru_cache()
-    def edit_to_actions(self, edit: str) -> np.array:
+    def edit_to_actions(self, edit: str) -> Actions:
         """
         Get the action indices of the action edit type
         """
@@ -93,7 +97,7 @@ class EditMaskGenerator:
         return actions
 
     @lru_cache()
-    def edit_to_labels(self, edit: str) -> np.char.array:
+    def edit_to_labels(self, edit: str) -> Labels:
         """
         Get the action labels of the action edit type
         """

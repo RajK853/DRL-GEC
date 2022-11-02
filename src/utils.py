@@ -353,7 +353,7 @@ def clean_text(text, is_ref=False):
     return text
 
 
-def load_json(data_path: str) -> Union[dict, Iterable[dict]]:
+def load_json(data_path: str) -> Union[dict, List[dict]]:
     """
     Load JSON file
     """
@@ -361,7 +361,7 @@ def load_json(data_path: str) -> Union[dict, Iterable[dict]]:
         return json.load(fp)
 
 
-def write_json(data_path: str, data: Union[dict, Iterable[dict]], indent: int = 4, **kwargs):
+def write_json(data_path: str, data: Union[dict, List[dict]], indent: int = 4, **kwargs):
     """
     Write to a JSON file
     """
