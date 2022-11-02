@@ -1,3 +1,4 @@
+import os
 import argparse
 from tqdm.auto import tqdm
 
@@ -17,6 +18,8 @@ def main(json_path: str, output_path: str = None, chunk_size: int = 1024):
         output_path = json_path.replace(".json", ".gector")
         print(f"- Saving data to '{output_path}'")
     json_data = load_json(json_path)
+    if os.path.exists(output_path):
+        os.remove(output_path)
 
     tagged = []
     cnt_total, cnt_all, cnt_tp = 0, 0, 0
