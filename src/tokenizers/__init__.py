@@ -1,2 +1,2 @@
-from .base_tokenizer import Tokenizer
+from .base import Tokenizer
 from .whitespace import WSTokenizer
