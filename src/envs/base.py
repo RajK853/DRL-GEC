@@ -18,7 +18,7 @@ ROOT_PATH = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
 DEFAULT_LABELS_PATH = os.path.join(ROOT_PATH, r"data/vocabs/labels.txt")
 MAX_EPISODE_STEPS = 5
 DEFAULT_REWARD_CONFIG = {
-    "correct": 0.5,
+    "correct": 0.1,
     "fn_penalty": -0.1,
     "out_of_range_reward": -1.0,
 }
@@ -45,7 +45,7 @@ class BaseGECEnv(Env):
             add_start: bool = True,
             correct_examples_percent: List[bool] = None,
             repeat_interval: int = 1_000,
-            repeat: int = 3,
+            repeat: int = 1,
             consecutive: bool = False,
             min_num_refs: List[int] = None,
     ):
