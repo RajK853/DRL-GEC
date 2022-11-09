@@ -4,8 +4,8 @@ from typing import Dict, List, Any
 from transformers import AutoTokenizer, AutoConfig, AutoModel
 from transformers.tokenization_utils_fast import PreTrainedTokenizerFast
 
-from src.models.utils import reduce_mean
-from src.utils import stack_padding, START_TOKEN
+from src import utils
+from src.models.pooling import reduce_mean
 
 
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
@@ -29,7 +29,7 @@ class PretrainedEncoder(nn.Module):
         self.config = AutoConfig.from_pretrained(model_name, **transformer_config)
         self.transformer = AutoModel.from_pretrained(model_name, config=self.config, add_pooling_layer=add_pooling_layer)
         self.return_offsets_mapping = isinstance(self.tokenizer, PreTrainedTokenizerFast)
-        self.add_tokens([START_TOKEN])
+        self.add_tokens([utils.START_TOKEN])
 
     def add_tokens(self, tokens: List[str]):
         """
@@ -79,7 +79,7 @@ class PretrainedEncoder(nn.Module):
                         start_index = offset_index + 1         # Next starting index
                         break
             aligns.append(seq_aligns)
-        padded_aligns = stack_padding(aligns, dtype="int32")   # Pad the aligns as int32
+        padded_aligns = utils.stack_padding(aligns, dtype="int32")   # Pad the aligns as int32
         return torch.from_numpy(padded_aligns)
 
     def forward(self, tokens: List[str]) -> torch.Tensor:
