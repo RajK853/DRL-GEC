@@ -1,3 +1,6 @@
 [submodule "gector"]
 	path = gector
 	url = https://github.com/grammarly/gector.git
+[submodule "jfleg"]
+	path = jfleg
+	url = https://github.com/keisks/jfleg.git
