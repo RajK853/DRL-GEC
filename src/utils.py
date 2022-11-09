@@ -14,7 +14,9 @@ from typing import Iterable, List, Union
 from rapidfuzz.distance import Levenshtein
 from nltk.translate.gleu_score import sentence_gleu
 
+from src.models import seq2labels
 
+device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 ROOT_PATH = os.path.dirname(os.path.dirname(__file__))
 VERB_VOCAB_PATH = os.path.join(ROOT_PATH, r"data/vocabs/verb-form-vocab.txt")
 # Punctuation normalisation dictionary derived from the BEA2019 Shared Task style JSON to M2 conversion script
@@ -60,6 +62,27 @@ START_TOKEN = "$START"
 UNK_TOKEN = "$UNKNOWN"
 LABELS_SEP = "SEPL__SEPR"
 TOK_LABEL_SEP = "SEPL|||SEPR"
+
+
+def load_model(model_path, model_name, *, num_labels, dropout=0.1, **kwargs):
+    encoder = seq2labels.PretrainedEncoder(model_name, **kwargs).to(device)
+    policy = seq2labels.Seq2Labels(encoder_model=encoder, num_labels=num_labels, dropout=dropout).to(device)
+    if model_path:
+        policy.load_state_dict(torch.load(model_path))
+    return policy
+
+
+def read_m2(data_path):
+    with open(data_path, "r") as fp:
+        sentences = [clean_text(line[2:]) for line in fp if line.startswith("S ")]
+    return sentences
+
+
+def load_labels(label_path, verbose=True):
+    label_vocab = np.char.array(load_text(label_path))
+    if verbose:
+        print(f"Number of labels: {len(label_vocab)}")
+    return label_vocab
 
 
 def load_yaml(filepath):
