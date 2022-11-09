@@ -90,7 +90,7 @@ class EditMaskGenerator:
         Get the action indices of the action edit type
         """
         if edit == "mixed":
-            actions = [np.where(self.encoded_labels == e)[0] for e in ("delete", "insert", "replace")]
+            actions = [np.where(self.encoded_labels == e)[0] for e in ("insert", "replace")]
             actions = np.concatenate(actions)
         else:
             actions, *_ = np.where(self.encoded_labels == edit)
