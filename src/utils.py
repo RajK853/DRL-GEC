@@ -1,6 +1,7 @@
 import os
 import re
 import json
+import yaml
 import torch
 import socket
 import unicodedata
@@ -59,6 +60,16 @@ START_TOKEN = "$START"
 UNK_TOKEN = "$UNKNOWN"
 LABELS_SEP = "SEPL__SEPR"
 TOK_LABEL_SEP = "SEPL|||SEPR"
+
+
+def load_yaml(filepath):
+    with open(filepath, "r") as fp:
+        return yaml.safe_load(fp)
+
+
+def softmax(values):
+    exp_values = np.exp(values)
+    return exp_values/exp_values.sum()
 
 
 def is_gce_instance():
@@ -157,6 +168,7 @@ def filter_by_order(labels, label_types=None):
 
 
 def add_start(tokens):
+    tokens = tokens.copy()
     if tokens and tokens[0] != START_TOKEN:
         tokens.insert(0, START_TOKEN)
     return tokens
