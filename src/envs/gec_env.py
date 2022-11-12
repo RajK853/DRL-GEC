@@ -16,9 +16,9 @@ LD_V0_REWARD_CONFIG = {
     "out_of_range_reward": -1.0,
 }
 LD_V1_REWARD_CONFIG = {
-    "correct": 1.0,
+    "correct": 0.1,
     "fn_penalty": 0.0,
-    "out_of_range_reward": -5.0,
+    "out_of_range_reward": -1.0,
 }
 
 
@@ -47,7 +47,7 @@ class GECEnvLevDistV1(BaseGECEnv):
             len_ref = len(ref_tokens)
             prev_ref_lev_dist = get_lev_dist(prev_tokens, ref_tokens)
             cur_ref_lev_dist = get_lev_dist(tokens, ref_tokens)
-            lev_reward = cur_ref_lev_dist - prev_ref_lev_dist
+            lev_reward = 0.1*(prev_ref_lev_dist - cur_ref_lev_dist)
             rewards.append(lev_reward)
         return max(rewards)
 
