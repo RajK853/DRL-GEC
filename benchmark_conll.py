@@ -4,6 +4,8 @@ import subprocess as sb
 
 from src.utils import load_labels, load_model, read_m2, write_text, iterative_prediction
 
+os.environ["TOKENIZERS_PARALLELISM"] = "false"
+
 BENCHMARK = "conll"
 LABEL_PATH = "data/vocabs/labels.txt"
 SUBMODULE_PATH = os.path.abspath("m2scorer/")
