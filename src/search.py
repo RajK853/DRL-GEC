@@ -23,22 +23,19 @@ def get_best_candidates(mask_gen, tokens, reference, tok_i, tok_edit, src_ref_le
 
 
 def get_best_label(policy, mask_gen, tokens, tok_i, candidate_labels, candidate_delta, explore=True):
-    num_candidates = len(candidate_labels)
-    if num_candidates == 0:
+    if len(candidate_labels) == 0:
         return "$KEEP"
     # Insert $KEEP label to give chance to not modify the token
     candidate_labels = np.append(candidate_labels, "$KEEP")
     candidate_delta = np.append(candidate_delta, 0)
     if explore:
-        candidate_probs = None
+        candidate_probs = softmax(candidate_delta)
+        candidate_probs /= candidate_probs.sum()
     else:
         with torch.no_grad():
             [logits] = policy([tokens])
             candidate_indexes = mask_gen.labels_to_actions(list(candidate_labels))
-            policy_probs = logits[tok_i, candidate_indexes].softmax(0).cpu().numpy()
-            delta_probs = softmax(candidate_delta)
-            candidate_probs = 0.5*(policy_probs + delta_probs)  # Calculate elementwise mean between two probabilities
-            candidate_probs /= candidate_probs.sum()    # Normalize to make sure sum(probs) is exactly 1.0
+            candidate_probs = logits[tok_i, candidate_indexes].softmax(0).cpu().numpy()
     best_tok_label = np.random.choice(candidate_labels, p=candidate_probs)
     return best_tok_label
 
