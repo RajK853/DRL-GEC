@@ -133,11 +133,12 @@ class BaseGECEnv(Env):
             self._current_tokens = [START_TOKEN] + self._current_tokens
             self._reference_tokens_list = [[START_TOKEN] + ref for ref in self._reference_tokens_list]
 
-    def reset(self, *, seed=None, return_info=False, options=None) -> Tokens:
+    def reset(self, *, data_dict=None, seed=None, return_info=False, options=None) -> Tokens:
         self.renderer.reset()
         # Select new source-reference pair
-        self.data_i = self.index_sampler.sample()    # Obtain data index
-        data_dict = self.data[self.data_i]           # Obtain data dict with source-reference
+        if data_dict is None:
+            self.data_i = self.index_sampler.sample()    # Obtain data index
+            data_dict = self.data[self.data_i]           # Obtain data dict with source-reference
         self.init_episode_tokens(data_dict)
         self._max_token_num = max(1.5*len(self._current_tokens), 10)   # Maximum number of allowed tokens
         # Initialize the episode variables
