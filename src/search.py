@@ -24,7 +24,7 @@ def get_best_candidates(mask_gen, tokens, reference, tok_i, tok_edit, src_ref_le
 
 def get_best_label(policy, mask_gen, tokens, tok_i, candidate_labels, candidate_delta, explore=True):
     if len(candidate_labels) == 0:
-        return "$KEEP"
+        return "$UNKNOWN"
     # Insert $KEEP label to give chance to not modify the token
     candidate_labels = np.append(candidate_labels, "$KEEP")
     candidate_delta = np.append(candidate_delta, 0)
