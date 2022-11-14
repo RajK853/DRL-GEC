@@ -53,8 +53,6 @@ class EditMaskGenerator:
                 continue
             elif edit_type == "insert" and i == j:
                 i -= 1                                # Adjust i such that tokens[i:j] = token to use the insert edit
-            elif edit_type == "replace" and j-i > 1:  # Change more than 1 consecutive replace edits to mixed edit
-                edit_type = "mixed"
             edit_mask[i:j] = edit_type
         return edit_mask
 
@@ -89,9 +87,8 @@ class EditMaskGenerator:
         """
         Get the action indices of the action edit type
         """
-        if edit == "mixed":
-            actions = [np.where(self.encoded_labels == e)[0] for e in ("delete", "insert", "replace")]
-            actions = np.concatenate(actions)
+        if edit == "replace":
+            actions, *_ = np.where(self.encoded_labels != "equal")
         else:
             actions, *_ = np.where(self.encoded_labels == edit)
         return actions
