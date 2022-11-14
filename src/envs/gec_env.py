@@ -16,7 +16,7 @@ LD_V0_REWARD_CONFIG = {
     "out_of_range_reward": -1.0,
 }
 LD_V1_REWARD_CONFIG = {
-    "correct": 0.1,
+    "correct": 1.0,
     "fn_penalty": 0.0,
     "out_of_range_reward": -1.0,
 }
@@ -47,7 +47,7 @@ class GECEnvLevDistV1(BaseGECEnv):
             len_ref = len(ref_tokens)
             prev_ref_lev_dist = get_lev_dist(prev_tokens, ref_tokens)
             cur_ref_lev_dist = get_lev_dist(tokens, ref_tokens)
-            lev_reward = 0.1*(prev_ref_lev_dist - cur_ref_lev_dist)
+            lev_reward = prev_ref_lev_dist - cur_ref_lev_dist
             rewards.append(lev_reward)
         return max(rewards)
 
@@ -96,6 +96,18 @@ register(
             "reward_config": LD_V0_REWARD_CONFIG,
         }
 )
+
+register(
+        id="wi_locness_gec_lev_dist-v1",
+        entry_point="src.envs:GECEnvLevDistV1",
+        max_episode_steps=MAX_EPISODE_STEPS,
+        kwargs={
+            "label_path": DEFAULT_LABELS_PATH,
+            "datasets": ["wi+locness"],
+            "reward_config": LD_V0_REWARD_CONFIG,
+        }
+)
+
 
 register(
         id="gec_gleu-v0",
