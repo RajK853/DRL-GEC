@@ -17,8 +17,8 @@ LD_V0_REWARD_CONFIG = {
 }
 LD_V1_REWARD_CONFIG = {
     "correct": 1.0,
-    "fn_penalty": 0.0,
-    "out_of_range_reward": -1.0,
+    "fn_penalty": -2.0,
+    "out_of_range_reward": -2.0,
 }
 
 
