@@ -20,14 +20,17 @@ class PretrainedEncoder(nn.Module):
             tokenizer_config: Dict[str, Any] = None,
             transformer_config: Dict[str, Any] = None,
             add_pooling_layer: bool = False,
+            local_files_only: bool = False,
     ):
         super(PretrainedEncoder, self).__init__()
         # Init tokenizer and transformer
         tokenizer_config = tokenizer_config or DEFAULT_TOKENIZER_CFG.copy()
         transformer_config = transformer_config or DEFAULT_TRANSFORMER_CONFIG.copy()
-        self.tokenizer = AutoTokenizer.from_pretrained(model_name, **tokenizer_config)
+        self.tokenizer = AutoTokenizer.from_pretrained(model_name, **tokenizer_config, local_files_only=local_files_only)
         self.config = AutoConfig.from_pretrained(model_name, **transformer_config)
-        self.transformer = AutoModel.from_pretrained(model_name, config=self.config, add_pooling_layer=add_pooling_layer)
+        self.transformer = AutoModel.from_pretrained(
+                model_name, config=self.config, add_pooling_layer=add_pooling_layer, local_files_only=local_files_only
+        )
         self.return_offsets_mapping = isinstance(self.tokenizer, PreTrainedTokenizerFast)
         self.add_tokens([utils.START_TOKEN])
 
