@@ -51,13 +51,16 @@ def search_best_actions(policy, tokens, reference, mask_gen, explore=True, verbo
             print(f"Edit_mask: {edit_mask}")
         for tok_i, tok_edit in reversed(tuple(enumerate(edit_mask))):
             if tok_edit == "equal":
-                continue
-            candidate_labels, candidate_delta = get_best_candidates(
-                    mask_gen, tokens, reference, tok_i, tok_edit, current_lev_dist, verbose=verbose
-            )
-            tok_label = get_best_label(
-                    policy, mask_gen, tokens, tok_i, candidate_labels, candidate_delta, explore=explore
-            )
+                tok_label = "$KEEP"
+            elif tok_edit == "delete":
+                tok_label = "$DELETE"
+            else:
+                candidate_labels, candidate_delta = get_best_candidates(
+                        mask_gen, tokens, reference, tok_i, tok_edit, current_lev_dist, verbose=verbose
+                )
+                tok_label = get_best_label(
+                        policy, mask_gen, tokens, tok_i, candidate_labels, candidate_delta, explore=explore
+                )
             if tok_label != "$KEEP":
                 tokens = apply_labels_at(tokens, [tok_label], [tok_i])
                 current_lev_dist = get_lev_dist(tokens, reference)
