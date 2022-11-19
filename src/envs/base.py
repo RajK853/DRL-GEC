@@ -103,7 +103,7 @@ class BaseGECEnv(Env):
         if min_num_refs is None:
             min_num_refs = [1] * len(datasets)
         for i, name in enumerate(datasets):
-            data_path = os.path.join(ROOT_PATH, f"data/processed/{name}/data.json")
+            data_path = os.path.join(ROOT_PATH, f"data/processed/{name}/data_filtered.json")
             json_data = load_json(data_path)
             print(f"Original number of data in {name}: {len(json_data)}")
             json_data = filter_correct(json_data, correct_examples_percent[i])
