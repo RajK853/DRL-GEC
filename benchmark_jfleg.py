@@ -33,7 +33,7 @@ def benchmark(model_path, label_path=LABEL_PATH, repo_path=SUBMODULE_PATH, max_i
         if force or not os.path.exists(output_path):       # Generate model outputs
             print("# Generating model outputs")
             label_vocab = load_labels(label_path, verbose=True)
-            policy = load_model(model_path, model_name="roberta-base", num_labels=len(label_vocab))
+            policy = load_model(model_name="roberta-base", model_path=model_path, num_labels=len(label_vocab))
             policy.eval()
             generate_outputs(policy, label_vocab, data_path, output_path, max_iter=max_iter)
         else:
