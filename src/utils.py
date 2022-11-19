@@ -64,10 +64,10 @@ LABELS_SEP = "SEPL__SEPR"
 TOK_LABEL_SEP = "SEPL|||SEPR"
 
 
-def load_model(model_path, model_name, *, num_labels, dropout=0.1, **kwargs):
+def load_model(model_name, *, model_path, num_labels, dropout=0.1, **kwargs):
     encoder = seq2labels.PretrainedEncoder(model_name, **kwargs).to(device)
     policy = seq2labels.Seq2Labels(encoder_model=encoder, num_labels=num_labels, dropout=dropout).to(device)
-    if model_path:
+    if model_path is not None:
         policy.load_state_dict(torch.load(model_path))
     return policy
 
