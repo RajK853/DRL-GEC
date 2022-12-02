@@ -1,10 +1,12 @@
 import argparse
 
+import benchmark_bea
 import benchmark_conll
 import benchmark_jfleg
 
 
 def main(model_dir, label_path, max_iter=10, force=False):
+    benchmark_bea.main(model_dir, label_path, max_iter=max_iter, force=force)
     benchmark_conll.main(model_dir, label_path, max_iter=max_iter, force=force)
     benchmark_jfleg.main(model_dir, label_path, max_iter=max_iter, force=force)
 
