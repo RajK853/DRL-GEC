@@ -1,0 +1,22 @@
+cold_lr: 1.0E-3
+warm_lr: 1.0E-5
+dropout: 0.1
+num_epochs: 20
+cold_epochs: 0
+patience: 2
+batch_size: 64
+accumulation_size: 4
+num_workers: 4
+data_limit: 0
+keep_corrects: true
+datasets: &datasets ["wi+locness"]
+label_path: "../data/vocabs/labels.txt"
+model_path: &model_path "notebooks/sl_logs/pretrain_synthetic_31:10:2022_09:39/model-best.pt"
+log_dir: "sl_results"
+meta_data:
+    base_model: *model_path
+    datasets: *datasets
+    description: "
+    Finetuning
+    Use Unknown label
+    "
