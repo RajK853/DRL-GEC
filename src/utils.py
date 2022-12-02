@@ -6,10 +6,14 @@ import torch
 import socket
 import unicodedata
 import numpy as np
+import pandas as pd
+from numba import njit
 from torch import Tensor
 from tqdm.auto import tqdm
+from zipfile import ZipFile
 from itertools import islice
 import multiprocessing as mp
+from IPython.display import display
 from typing import Iterable, List, Union
 from rapidfuzz.distance import Levenshtein
 from nltk.translate.gleu_score import sentence_gleu
@@ -64,6 +68,96 @@ LABELS_SEP = "SEPL__SEPR"
 TOK_LABEL_SEP = "SEPL|||SEPR"
 
 
+def read_bea_score(score_path):
+    def process_line(text):
+        key, value = text.split(":")
+        key = key[:-3].upper()  # Remove the "_cs" suffix and change to uppercase
+        value = eval(value)
+        return key, value
+
+    raw_data = ZipFile(score_path, "r").read("scores.txt")
+    raw_data = raw_data.decode("utf-8")
+    score_dict = dict(process_line(line) for line in raw_data.split("\n") if line)
+    return score_dict
+
+
+def gen_conll_report(model_info):
+    results = []
+    for model_name, (model_path, model_type) in model_info.items():
+        score_path = os.path.join(model_path, "conll", f"{model_type}.score")
+        data = load_text(score_path)
+        correct, predicted, total = (eval(line.split(": ")[1]) for line in data[-9:-6])
+        p, r, f = (eval(line.split(": ")[1]) for line in data[-3:])
+        results.append({
+            "Model": model_name,
+            "TP": correct,
+            "FP": predicted - correct,
+            "FN": total - correct,
+            "Precision": p,
+            "Recall": r,
+            "F-0.5 Score": f,
+        })
+    conll_df = pd.DataFrame(results)
+    conll_df = conll_df.set_index("Model")
+    return conll_df
+
+
+def gen_jfleg_report(model_info):
+    results = []
+    for model_name, (model_path, model_type) in model_info.items():
+        model_results = {"Model": model_name}
+        for score_type in ("dev", "test"):
+            score_path = os.path.join(model_path, "jfleg", f"{model_type}_{score_type}.score")
+            data = load_text(score_path)
+            score_list = eval(data[-1])
+            model_results[f"{score_type.title()} GLEU Score"] = eval(score_list[0][0])
+        results.append(model_results)
+    jfleg_df = pd.DataFrame(results)
+    jfleg_df = jfleg_df.set_index("Model")
+    return jfleg_df
+
+
+def gen_bea_report(model_info):
+    results = []
+    for model_name, (model_path, model_type) in model_info.items():
+        model_results = {"Model": model_name}
+        score_path = os.path.join(model_path, "bea", f"{model_type}.score.zip")
+        score_dict = read_bea_score(score_path)
+        model_results = {**model_results, **score_dict}
+        results.append(model_results)
+    bea_df = pd.DataFrame(results)
+    bea_df = bea_df.rename(columns={"P": "Precision", "R": "Recall", "F0.5": "F-0.5 Score"})
+    bea_df = bea_df.set_index("Model")
+    return bea_df
+
+
+def gen_combined_report(model_info, include_bea=False):
+    bea_df = None
+    if include_bea:
+        bea_df = gen_bea_report(model_info)
+        bea_df.columns = pd.MultiIndex.from_product([["BEA Benchmark"], bea_df.columns])
+    conll_df = gen_conll_report(model_info)
+    conll_df.columns = pd.MultiIndex.from_product([["CONLL Benchmark"], conll_df.columns])
+    jfleg_df = gen_jfleg_report(model_info)
+    jfleg_df.columns = pd.MultiIndex.from_product([["JFLEG Benchmark"], jfleg_df.columns])
+    if include_bea:
+        combined_df = pd.concat([bea_df, conll_df, jfleg_df], axis=1)
+        bar_cols = [("BEA Benchmark", "F-0.5 Score"), ("CONLL Benchmark", "F-0.5 Score"), *jfleg_df.columns]
+        min_cols = [("BEA Benchmark", "FP"), ("BEA Benchmark", "FN"), ("CONLL Benchmark", "FP"), ("CONLL Benchmark", "FN")]
+    else:
+        combined_df = pd.concat([conll_df, jfleg_df], axis=1)
+        bar_cols = [("CONLL Benchmark", "F-0.5 Score"), *jfleg_df.columns]
+        min_cols = [("CONLL Benchmark", "FP"), ("CONLL Benchmark", "FN")]
+    max_cols = [col for col in combined_df.columns if (col not in min_cols and col not in bar_cols)]
+    display(
+        combined_df.style
+        .highlight_min(color="lightgreen", axis=0, subset=min_cols)
+        .highlight_max(color="lightgreen", axis=0, subset=max_cols)
+        .bar(subset=bar_cols, axis=0, color="#FFA07A", align="left")
+    )
+    return combined_df
+
+
 def load_model(model_name, *, model_path, num_labels, dropout=0.1, **kwargs):
     encoder = seq2labels.PretrainedEncoder(model_name, **kwargs).to(device)
     policy = seq2labels.Seq2Labels(encoder_model=encoder, num_labels=num_labels, dropout=dropout).to(device)
@@ -91,18 +185,18 @@ def load_yaml(filepath):
 
 
 def softmax(values):
-    exp_values = np.exp(values)
-    return exp_values/exp_values.sum()
+    exp_values = np.exp(values - np.max(values))
+    return exp_values/exp_values.sum(0)
 
 
 def is_gce_instance():
     """
-    Check if it's GCE instance via DNS lookup to metadata server.
+    Check if it"s GCE instance via DNS lookup to metadata server.
     Source:
     https://stackoverflow.com/a/58619342
     """
     try:
-        socket.getaddrinfo('metadata.google.internal', 80)
+        socket.getaddrinfo("metadata.google.internal", 80)
     except socket.gaierror:
         return False
     return True
@@ -115,14 +209,15 @@ def freeze_params(model, requires_grad=False, num_layers=0, optim=None, lr=None)
     if optim is not None:
         assert lr is not None, "Learning rate not given!"
         for param_group in optim.param_groups:
-            param_group['lr'] = lr
+            param_group["lr"] = lr
 
 
+@njit
 def discount_cumsum(data, discount):
     cumsum = 0.0
     num_data = len(data)
     discounted_values = np.zeros(num_data, dtype="float32")
-    for i in reversed(range(num_data)):
+    for i in range(num_data-1, -1, -1):          # Loop in reverse from N-1 to 0
         cumsum = discounted_values[i] = data[i] + discount*cumsum
     return discounted_values
 
@@ -242,8 +337,8 @@ def iterative_prediction(policy, label_vocab, texts, num_iter=5, filter_labels=F
 
 
 def remove_ansi(text):
-    ansi_escape = re.compile(r'\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])')
-    return ansi_escape.sub('', text)
+    ansi_escape = re.compile(r"\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])")
+    return ansi_escape.sub("", text)
 
 
 def minibatch(seqs, size):
@@ -369,8 +464,8 @@ def stack_padding(it, dtype="float32"):
         new.resize(size)
         return new
 
-    row_length = len(max(it, key=len))     # get longest row length
-    mat = np.array([resize(row, row_length) for row in it], dtype=dtype)
+    pad_len = max(map(len, it))             # get longest row length
+    mat = np.array([resize(row, pad_len) for row in it], dtype=dtype)
     return mat
 
 
@@ -512,7 +607,7 @@ def apply_labels_at(tokens: List[str], labels: List[str], positions: List[int]) 
     tokens = [*tokens]
     num_tokens = len(tokens)
     assert all(pos < num_tokens for pos in positions)
-    assert len(labels) == len(positions)
+    assert len(labels) == len(positions), f"For {num_tokens}, got {len(labels)} labels: {labels} and {len(positions)} positions: {positions}"
     if len(labels) > 1:
         # Sort labels in descending order of the positions
         labels, positions = zip(*sorted(zip(labels, positions), key=lambda x: x[1], reverse=True))
