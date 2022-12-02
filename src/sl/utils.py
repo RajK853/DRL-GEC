@@ -5,6 +5,9 @@ from src.utils import stack_padding, TOK_LABEL_SEP, LABELS_SEP, UNK_TOKEN
 
 
 def process_sent(sent, label_vocab):
+    """
+    Extract tokens and their labels and handle OOV labels
+    """
     tokens = []
     labels = []
     for tok_and_label in sent.split(" "):
@@ -18,6 +21,9 @@ def process_sent(sent, label_vocab):
 
 
 def process_data(data_list, label_vocab, keep_corrects=True):
+    """
+    Process a list of sentences.
+    """
     all_tokens = []
     all_labels = []
     for sent in tqdm(data_list, desc="Processing data", total=len(data_list)):
@@ -31,12 +37,14 @@ def process_data(data_list, label_vocab, keep_corrects=True):
 
 
 def collate_func(data_batch):
+    non_pad_masks = []
     batch = defaultdict(list)
     for data_dict in data_batch:
         for k, v in data_dict.items():
             batch[k].append(v)
-        batch["masks"].append([1]*len(data_dict["labels"]))
+        non_pad_masks.append([1]*len(data_dict["labels"]))
+    # Pad the mask and labels to the longest batch sequence
+    non_pad_masks = stack_padding(non_pad_masks, dtype="bool")
     batch["labels"] = stack_padding(batch["labels"], dtype="int64")
-    batch["masks"] = stack_padding(batch["masks"], dtype="bool")
-    batch["labels"][~batch["masks"]] = -100                              # Set ignore index
+    batch["labels"][~non_pad_masks] = -100                         # Set ignore index to padding labels
     return batch
