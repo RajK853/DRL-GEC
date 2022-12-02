@@ -63,7 +63,7 @@ class PretrainedEncoder(nn.Module):
     @staticmethod
     def get_alignments(offsets: torch.Tensor, token_lens: List[List[int]]) -> torch.Tensor:
         """
-        Get alignments used to keep track of splitted tokens
+        Get alignments used to keep track of split tokens
         """
         aligns = []
         batch_size, pad_size = offsets.shape[:2]
@@ -82,7 +82,7 @@ class PretrainedEncoder(nn.Module):
                         start_index = offset_index + 1         # Next starting index
                         break
             aligns.append(seq_aligns)
-        padded_aligns = utils.stack_padding(aligns, dtype="int32")   # Pad the aligns as int32
+        padded_aligns = utils.stack_padding(aligns, dtype="uint8")   # Pad the aligns as int
         return torch.from_numpy(padded_aligns)
 
     def forward(self, tokens: List[str]) -> torch.Tensor:
@@ -90,11 +90,11 @@ class PretrainedEncoder(nn.Module):
         Forward function
         """
         token_data = self.tokenize_batch(tokens)
-        aligns = self.get_alignments(token_data["offset_mapping"], token_data["lengths"])
         trf_out = self.transformer(
                 input_ids=token_data["input_ids"],
                 attention_mask=token_data["attention_mask"],
         )
+        aligns = self.get_alignments(token_data["offset_mapping"], token_data["lengths"])
         encoded_out = reduce_mean(trf_out.last_hidden_state, aligns)
         return encoded_out
 
