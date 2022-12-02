@@ -11,6 +11,8 @@ from src.sl.dataset import GECDataset
 from src.sl.utils import process_data, collate_func
 from src.utils import load_yaml, load_text, write_json, freeze_params, load_model
 
+
+os.environ["TOKENIZERS_PARALLELISM"] = "false"
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
 
