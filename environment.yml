@@ -24,3 +24,4 @@ dependencies:
     - rapidfuzz==2.11.1
     - autocorrect==2.6.1
     - python-Levenshtein==0.12.2
+    - numba==0.56.4
