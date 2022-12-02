@@ -107,11 +107,8 @@ class IndexSampler:
     """
     Class to generate repeated indexes at given intervals
     """
-    def __init__(self, indexes: np.ndarray, interval: int, repeat: int = 2, consecutive: bool = True):
+    def __init__(self, indexes: np.ndarray):
         self.indexes = indexes
-        self.interval = interval
-        self.repeat = repeat
-        self.consecutive = consecutive
         self.iterator = None
         self.reset()
 
@@ -119,21 +116,8 @@ class IndexSampler:
         """
         Generator to initialize the indexes
         """
-        for i in range(0, len(self.indexes), self.interval):
-            current_indexes = self.indexes[i:i + self.interval]
-            if self.repeat > 1:
-                if self.consecutive:
-                    for index in current_indexes:
-                        for _ in range(self.repeat):
-                            yield index
-                else:
-                    current_indexes = np.tile(current_indexes, self.repeat)  # Repeat the current indexes for N times
-                    np.random.shuffle(current_indexes)                       # Shuffle the current indexes
-                    for index in current_indexes:
-                        yield index
-            else:
-                for index in current_indexes:
-                    yield index
+        for index in self.indexes:
+            yield index
 
     def reset(self):
         """

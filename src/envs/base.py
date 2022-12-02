@@ -18,9 +18,10 @@ ROOT_PATH = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
 DEFAULT_LABELS_PATH = os.path.join(ROOT_PATH, r"data/vocabs/labels.txt")
 MAX_EPISODE_STEPS = 5
 DEFAULT_REWARD_CONFIG = {
+    "scale": 1.0,
     "correct": 0.1,
     "fn_penalty": -0.1,
-    "out_of_range_reward": -1.0,
+    "out_of_range_penalty": -1.0,
 }
 OUTPUT_TEXT_FMT = """\x1b[37;1mTimestep:\x1b[0m {0}  
 \x1b[37;1mRewards:\x1b[0m {1}  
@@ -44,9 +45,6 @@ class BaseGECEnv(Env):
             reward_config: Dict[str, float] = None,
             add_start: bool = True,
             correct_examples_percent: List[bool] = None,
-            repeat_interval: int = 1_000,
-            repeat: int = 1,
-            consecutive: bool = False,
             min_num_refs: List[int] = None,
     ):
         self.tokenizer = tokenizer
@@ -70,12 +68,7 @@ class BaseGECEnv(Env):
         self.num_sents = len(self.data)
         data_indexes = np.arange(self.num_sents, dtype="uint32")
         self.mask_generator = EditMaskGenerator(self.labels)
-        self.index_sampler = IndexSampler(
-                data_indexes,
-                interval=repeat_interval,
-                repeat=repeat,
-                consecutive=consecutive,
-        )
+        self.index_sampler = IndexSampler(data_indexes)
         # Environment variables
         self._episode_steps = 0
         self._orig_num_tokens = 0
@@ -186,17 +179,19 @@ class BaseGECEnv(Env):
         raise NotImplementedError
 
     def compute_reward(self, prev_tokens, tokens, references, labels) -> float:
+        reward_scale = self.reward_config["scale"]
         if prev_tokens == tokens:          # Tokens did not change
             if self._check_token_in_reference(tokens) and self._check_all_keep(labels):
                 # Tokens are correct and labels are all $KEEP
-                return self.reward_config["correct"]
+                reward = self.reward_config["correct"]
             else:
                 # Either tokens are not correct or labels are not all $KEEP i.e. some are $UNKNOWN
-                return self.reward_config["fn_penalty"]
+                reward = self.reward_config["fn_penalty"]
+            return reward_scale*reward
         if self._check_token_len(tokens):
-            return self.reward_config["out_of_range_reward"]
+            return reward_scale*self.reward_config["out_of_range_penalty"]
         reward = self._compute_reward(prev_tokens, tokens, references=references)
-        return reward
+        return reward_scale*reward
 
     def render(self, mode: str = "ansi") -> Union[list, None, str]:
         if self.render_mode is not None:
