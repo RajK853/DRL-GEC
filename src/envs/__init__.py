@@ -1,1 +1,1 @@
-from .gec_env import GECEnvLevDist, GECEnvGLEU, GECEnvLevDistV1
+from .gec_env import GECEnvLevDist, GECEnvGLEU, GECEnvLevDistV1, GECEnvLevDistV2
