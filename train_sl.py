@@ -28,7 +28,7 @@ def load_data(datasets, data_type, data_limit=0):
     data = []
     filename = "data.gector" if data_type == "train" else "dev.gector"
     for dataset in tqdm(datasets, desc=f"Loading {data_type} datasets", total=len(datasets)):
-        data_path = f"../data/processed/{dataset}/{filename}"
+        data_path = f"data/processed/{dataset}/{filename}"
         data.extend(load_text(data_path))
     if (data_limit > 0) and (len(data) > data_limit):
         print(f"Truncating amount of data from {len(data)} to {data_limit}")
