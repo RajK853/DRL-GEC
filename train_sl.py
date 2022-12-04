@@ -93,7 +93,7 @@ def main(
 ):
     train_type = "pretrain" if model_path is None else "finetune"
     current_datetime = datetime.now().strftime("%d_%m_%Y_%H:%M")
-    exp_log_dir = os.path.join(log_dir, f"{train_type}_rl_{current_datetime}")
+    exp_log_dir = os.path.join(log_dir, f"{train_type}_sl_{current_datetime}")
     # Load labels
     label_vocab = load_text(label_path)
     # Load and process datasets
