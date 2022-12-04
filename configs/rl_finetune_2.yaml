@@ -1,7 +1,7 @@
 # Algorithm parameters
 gamma: 0.95
 # Training parameters
-lr: 5.0E-6
+lr: 1.0E-5
 batch_size: 32
 update_interval: 200
 dropout: 0.1
@@ -11,8 +11,8 @@ eval_max_iter: 10
 evaluate_interval: 10_000
 record_output_interval: 100
 dev_data_path: "data/processed/wi+locness/dev.json"
-model_path: &model_path "notebooks/sl_logs/pretrain_synthetic_31:10:2022_19:25/model-best.pt"
-log_dir: "results_new"
+model_path: &model_path "sl_results/pretrain_sl_02_12_2022_15:01/model-best.pt"
+log_dir: "rl_results"
 env_kwargs: &env_kwargs
     id: "gec_lev_dist-v1"
     datasets: ["wi+locness"]                   # Datasets to load
