@@ -81,64 +81,76 @@ def read_bea_score(score_path):
     return score_dict
 
 
-def gen_conll_report(model_info):
+def gen_conll_report(model_info, verbose=False):
     results = []
     for model_name, (model_path, model_type) in model_info.items():
         score_path = os.path.join(model_path, "conll", f"{model_type}.score")
         data = load_text(score_path)
         correct, predicted, total = (eval(line.split(": ")[1]) for line in data[-9:-6])
-        p, r, f = (eval(line.split(": ")[1]) for line in data[-3:])
-        results.append({
-            "Model": model_name,
-            "TP": correct,
-            "FP": predicted - correct,
-            "FN": total - correct,
-            "Precision": p,
-            "Recall": r,
-            "F-0.5 Score": f,
-        })
+        p, r, f = (100*eval(line.split(": ")[1]) for line in data[-3:])
+        if verbose:
+            info_dict = {
+                "Model": model_name,
+                "TP": correct,
+                "FP": predicted - correct,
+                "FN": total - correct,
+                "Precision": p,
+                "Recall": r,
+                "F-0.5 Score": f,
+            }
+        else:
+            info_dict ={
+                "Model": model_name,
+                "F-0.5 Score": f,
+            }
+        results.append(info_dict)
     conll_df = pd.DataFrame(results)
     conll_df = conll_df.set_index("Model")
     return conll_df
 
 
-def gen_jfleg_report(model_info):
+def gen_jfleg_report(model_info, verbose=False):
     results = []
     for model_name, (model_path, model_type) in model_info.items():
         model_results = {"Model": model_name}
-        for score_type in ("dev", "test"):
+        for score_type in ["test"]:
             score_path = os.path.join(model_path, "jfleg", f"{model_type}_{score_type}.score")
             data = load_text(score_path)
             score_list = eval(data[-1])
-            model_results[f"{score_type.title()} GLEU Score"] = eval(score_list[0][0])
+            model_results[f"{score_type.title()} GLEU Score"] = 100*eval(score_list[0][0])
         results.append(model_results)
     jfleg_df = pd.DataFrame(results)
     jfleg_df = jfleg_df.set_index("Model")
     return jfleg_df
 
 
-def gen_bea_report(model_info):
+def gen_bea_report(model_info, verbose=False):
     results = []
     for model_name, (model_path, model_type) in model_info.items():
         model_results = {"Model": model_name}
         score_path = os.path.join(model_path, "bea", f"{model_type}.score.zip")
         score_dict = read_bea_score(score_path)
+        if not verbose:
+            score_dict = {k: v for k, v in score_dict.items() if k in "F0.5"}
         model_results = {**model_results, **score_dict}
         results.append(model_results)
     bea_df = pd.DataFrame(results)
-    bea_df = bea_df.rename(columns={"P": "Precision", "R": "Recall", "F0.5": "F-0.5 Score"})
+    if verbose:
+        bea_df = bea_df.rename(columns={"P": "Precision", "R": "Recall", "F0.5": "F-0.5 Score"})
+    else:
+        bea_df = bea_df.rename(columns={"F0.5": "F-0.5 Score"})
     bea_df = bea_df.set_index("Model")
     return bea_df
 
 
-def gen_combined_report(model_info, include_bea=False):
+def gen_combined_report(model_info, verbose=False, include_bea=False):
     bea_df = None
     if include_bea:
-        bea_df = gen_bea_report(model_info)
+        bea_df = gen_bea_report(model_info, verbose=verbose)
         bea_df.columns = pd.MultiIndex.from_product([["BEA Benchmark"], bea_df.columns])
-    conll_df = gen_conll_report(model_info)
+    conll_df = gen_conll_report(model_info, verbose=verbose)
     conll_df.columns = pd.MultiIndex.from_product([["CONLL Benchmark"], conll_df.columns])
-    jfleg_df = gen_jfleg_report(model_info)
+    jfleg_df = gen_jfleg_report(model_info, verbose=verbose)
     jfleg_df.columns = pd.MultiIndex.from_product([["JFLEG Benchmark"], jfleg_df.columns])
     if include_bea:
         combined_df = pd.concat([bea_df, conll_df, jfleg_df], axis=1)
@@ -149,12 +161,18 @@ def gen_combined_report(model_info, include_bea=False):
         bar_cols = [("CONLL Benchmark", "F-0.5 Score"), *jfleg_df.columns]
         min_cols = [("CONLL Benchmark", "FP"), ("CONLL Benchmark", "FN")]
     max_cols = [col for col in combined_df.columns if (col not in min_cols and col not in bar_cols)]
-    display(
+    style = (
         combined_df.style
-        .highlight_min(color="lightgreen", axis=0, subset=min_cols)
-        .highlight_max(color="lightgreen", axis=0, subset=max_cols)
-        .bar(subset=bar_cols, axis=0, color="#FFA07A", align="left")
+        .background_gradient(subset=bar_cols, axis=0)
+        # .bar(subset=bar_cols, axis=0, color="#FFA07A", align="left")
     )
+    if verbose:
+        style = (
+            style
+            .highlight_min(color="lightgreen", axis=0, subset=min_cols)
+            .highlight_max(color="lightgreen", axis=0, subset=max_cols)
+        )
+    display(style)
     return combined_df
 
 
