@@ -79,6 +79,23 @@ Description of the arguments are as follows:
 --chunk_size CHUNK_SIZE    # Chunk size during processing
 ```
 
+## Only Solvable Examples
+
+The Sequence-to-Label model cannot correct sentences if the required label is not present in the set of labels used by the model.
+Therefore, we have added a script to filter out unsolvable sentences from the JSON file using the following command:
+```commandline
+python filter_unsolvable.py --json_path JSON_PATH [--label_path LABEL_PATH]
+```
+Description of the arguments are as follows:
+```
+--json_path JSON_PATH      # Path to the input JSON file
+
+# Optional Arguments
+--label_path LABEL_PATH    # Path to the label vocabulary
+```
+
+This will generate a filtered JSON file with the `_filtered` suffix i.e. `data.json` -> `data_filtered.json`.
+
 # Training
 The models of our project uses the `train_sl.py` and `train_rl.py` scripts to train a model using SL and RL respectively.
 These scripts take training configurations in the YAML format. Configurations we used in our project to pre-train and fine-tune the models
