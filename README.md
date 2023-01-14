@@ -56,7 +56,8 @@ This notebook adapts the `m2_to_json.py` scripts to process parallel dataset int
 We use the preprocessing script from [GECToR](https://github.com/grammarly/gector) to prepare datasets
 for Supervised Learning (SL) method.
 
-> Please change the following line in the `gector/utils/preprocess_data.py` beforehand.
+> Please change the following line in the `gector/utils/preprocess_data.py` beforehand.  
+> 
 > Original: 
 > ```python
 > from helpers import write_lines, ...
