@@ -24,7 +24,7 @@ DEFAULT_REWARD_CONFIG = {
     "out_of_range_penalty": -1.0,
 }
 OUTPUT_TEXT_FMT = """\x1b[37;1mTimestep:\x1b[0m {0}  
-\x1b[37;1mRewards:\x1b[0m {1}  
+\x1b[37;1mReward:\x1b[0m {1}  
 \x1b[37;1mSource:\x1b[0m {2}  
 \x1b[37;1mOutput:\x1b[0m {3}  
 """
@@ -46,6 +46,7 @@ class BaseGECEnv(Env):
             add_start: bool = True,
             correct_examples_percent: List[bool] = None,
             min_num_refs: List[int] = None,
+            only_solvable: bool = True
     ):
         self.tokenizer = tokenizer
         self.add_start = add_start
@@ -59,7 +60,7 @@ class BaseGECEnv(Env):
         self.action_space = spaces.Discrete(self.num_actions)
         self.observation_space = spaces.Discrete(1)
         # Load and process data
-        self.data = self._init_data(datasets, correct_examples_percent, min_num_refs)
+        self.data = self._init_data(datasets, correct_examples_percent, min_num_refs, only_solvable)
         # Render configs
         self.render_mode = render_mode
         self.renderer = Renderer(self.render_mode, self._render)
@@ -89,14 +90,15 @@ class BaseGECEnv(Env):
         self._reference_tokens_list = None
 
     @staticmethod
-    def _init_data(datasets, correct_examples_percent=None, min_num_refs=None):
+    def _init_data(datasets, correct_examples_percent=None, min_num_refs=None, only_solvable=True):
         data = []
         if correct_examples_percent is None:
             correct_examples_percent = [1.0] * len(datasets)
         if min_num_refs is None:
             min_num_refs = [1] * len(datasets)
+        data_filename = "data_filtered.json" if only_solvable else "data.json"
         for i, name in enumerate(datasets):
-            data_path = os.path.join(ROOT_PATH, f"data/processed/{name}/data_filtered.json")
+            data_path = os.path.join(ROOT_PATH, f"data/processed/{name}/{data_filename}")
             json_data = load_json(data_path)
             print(f"Original number of data in {name}: {len(json_data)}")
             json_data = filter_correct(json_data, correct_examples_percent[i])
@@ -250,7 +252,7 @@ class BaseGECEnv(Env):
 
     def _check_token_len(self, tokens):
         num_tokens = len(tokens)
-        return (num_tokens <= 2) or (num_tokens >= self._max_token_num)
+        return (num_tokens < 3) or (num_tokens >= self._max_token_num)
 
     @staticmethod
     def _check_all_keep(labels):
