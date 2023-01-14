@@ -192,6 +192,7 @@ def main(
     for key, value in stats.items():
         print(f"{key:>30}: {value}")
     json_dir = os.path.dirname(json_path)
+    filename = os.path.basename(json_path)[:-5]
     os.makedirs(json_dir, exist_ok=True)
     params = {
         "min_len": min_len,
@@ -201,8 +202,8 @@ def main(
         "remove_ellipsis": remove_ellipsis,
         "only_proper_sent": only_proper_sent,
     }
-    write_json(os.path.join(json_dir, "params.json"), params)
-    write_json(os.path.join(json_dir, "metadata.json"), stats)
+    write_json(os.path.join(json_dir, f"{filename}_params.json"), params)
+    write_json(os.path.join(json_dir, f"{filename}_metadata.json"), stats)
     write_json(json_path, json_data)
 
 
@@ -214,7 +215,7 @@ if __name__ == "__main__":
     parser.add_argument('--max_len', type=int, help='Max number of tokens in original sentence', default=50)
     parser.add_argument('--min_sim', type=float, help='Min avg similarity between original and references', default=0.8)
     parser.add_argument('--only_proper_sent', help='Allow only proper reference sentences', action="store_true")
-    parser.add_argument('--spell_check', help='Allow only proper reference sentences', action="store_true")
+    parser.add_argument('--spell_check', help='Check spelling errors in original and references', action="store_true")
     parser.add_argument('--remove_ellipsis', help='Remove (source) sentences with ellipsis', action="store_true")
     parser.set_defaults(only_proper_sent=True, spell_check=True, remove_ellipsis=True)
     # Convert parsed arguments into key-worded arguments
