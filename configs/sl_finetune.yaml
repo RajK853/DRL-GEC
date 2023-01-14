@@ -4,14 +4,15 @@ dropout: 0.1
 num_epochs: 20
 cold_epochs: 0
 patience: 2
-batch_size: 128
-accumulation_size: 2
+batch_size: 320
+accumulation_size: 5
 num_workers: 4
 data_limit: 0
 keep_corrects: true
+only_solvable: true
 datasets: &datasets ["wi+locness"]
 label_path: "data/vocabs/labels.txt"
-model_path: &model_path "notebooks/sl_logs/pretrain_synthetic_31:10:2022_09:39/model-best.pt"
+model_path: &model_path "sl_results/pretrain_sl_02_12_2022_15:01/model-best.pt"
 log_dir: "sl_results"
 meta_data:
     base_model: *model_path

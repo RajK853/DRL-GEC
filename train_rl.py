@@ -29,12 +29,19 @@ def select_action(policy, state, reference, mask_generator):
     return action_np, log_pi, dist.entropy()
 
 
-def get_evaluator(data_path, label_vocab, num_iterations=10):
-    json_data = load_json(data_path)
-    src_ref = ((data_dict["text"], data_dict["references"]) for data_dict in json_data)
-    sources, references = zip(*src_ref)
+def get_evaluator(datasets, label_vocab, num_iterations=10):
+    sources = ()
+    references = ()
+    for dataset in datasets:
+        data_path = f"data/processed/{dataset}/dev.json"
+        json_data = load_json(data_path)
+        src_ref = ((data_dict["text"], data_dict["references"]) for data_dict in json_data)
+        src_data, ref_data = zip(*src_ref)
+        sources += src_data
+        references += ref_data
+        del json_data
+
     print(f"Number of evaluation examples: {len(sources)}")
-    del json_data
 
     def eval_func(policy):
         with torch.cuda.amp.autocast():
@@ -56,11 +63,9 @@ def main(
         update_interval,
         dropout,
         episodes,
-        # Evaluation parameters,
         eval_max_iter,
         evaluate_interval,
         record_output_interval,
-        dev_data_path,
         model_path,
         log_dir,
         env_kwargs,
@@ -86,7 +91,7 @@ def main(
     optim = torch.optim.Adam(policy.parameters(), lr=lr)
     grad_scaler = torch.cuda.amp.GradScaler()
     writer = SummaryWriter(log_dir=exp_log_dir)
-    evaluator = get_evaluator(dev_data_path, env.labels, eval_max_iter)
+    evaluator = get_evaluator(env_kwargs["datasets"], env.labels, eval_max_iter)
     write_json(os.path.join(exp_log_dir, "meta.json"), meta_data)
 
     # Log hyperparameters

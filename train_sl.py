@@ -26,9 +26,11 @@ def evaluate(model, batch, criterion):
     return loss
 
 
-def load_data(datasets, data_type, data_limit=0):
+def load_data(datasets, data_type, only_solvable=False, data_limit=0):
     data = []
     filename = "data.gector" if data_type == "train" else "dev.gector"
+    if only_solvable:
+        filename = filename.replace(".gector", "_filtered.gector")
     for dataset in tqdm(datasets, desc=f"Loading {data_type} datasets", total=len(datasets)):
         data_path = f"data/processed/{dataset}/{filename}"
         data.extend(load_text(data_path))
@@ -47,8 +49,9 @@ def load_and_process_data(
         keep_corrects=True,
         num_workers=None,
         data_limit=0,
+        only_solvable=False,
 ):
-    train_data = load_data(datasets, "train", data_limit=data_limit)
+    train_data = load_data(datasets, "train", data_limit=data_limit, only_solvable=only_solvable)
     val_data = load_data(datasets, "validation")
     train_tokens, train_labels = process_data(train_data, label_vocab, keep_corrects=keep_corrects)
     val_tokens, val_labels = process_data(val_data, label_vocab, keep_corrects=True)
@@ -90,6 +93,7 @@ def main(
         model_path,
         log_dir,
         meta_data,
+        only_solvable=False,
 ):
     train_type = "pretrain" if model_path is None else "finetune"
     current_datetime = datetime.now().strftime("%d_%m_%Y_%H:%M")
@@ -105,6 +109,7 @@ def main(
         keep_corrects=keep_corrects,
         num_workers=num_workers,
         data_limit=data_limit,
+        only_solvable=only_solvable,
     )
     # Load model
     model_name = "roberta-base"
