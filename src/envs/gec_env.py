@@ -12,13 +12,13 @@ ROOT_PATH = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
 DEFAULT_LABELS_PATH = os.path.join(ROOT_PATH, r"data/vocabs/labels.txt")
 LD_V0_REWARD_CONFIG = {
     "scale": 1.0,
-    "correct": 0.1,
+    "correct": 1.0,
     "fn_penalty": 0.0,
     "out_of_range_penalty": -1.0,
 }
 LD_V1_REWARD_CONFIG = {
     "scale": 1.0,
-    "correct": 1.0,
+    "correct": 10.0,
     "fn_penalty": 0.0,
     "out_of_range_penalty": -10.0,
 }
