@@ -133,7 +133,7 @@ dmypy.json
 
 # Data directory
 data/*
-notebooks/sl_logs/*
-notebooks/pg_logs/*
 !data/vocabs
+notebooks/*
+!notebooks/PIE_to_JSON.ipynb
 */.ipynb_checkpoints
