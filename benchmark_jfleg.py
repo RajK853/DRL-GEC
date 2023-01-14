@@ -7,6 +7,12 @@ from src.utils import load_labels, load_model, load_text, write_text, iterative_
 
 os.environ["TOKENIZERS_PARALLELISM"] = "false"
 
+
+TITLE = """
+##############
+# JFLEG-2017 #
+##############
+"""
 BENCHMARK = "jfleg"
 LABEL_PATH = "data/vocabs/labels.txt"
 SUBMODULE_PATH = os.path.abspath("jfleg/")
@@ -52,7 +58,7 @@ def main(model_dir, label_path=LABEL_PATH, repo_path=SUBMODULE_PATH, max_iter=10
     repo_path = os.path.abspath(repo_path)
     model_dir = os.path.abspath(model_dir)
     model_names = [filename for filename in os.listdir(model_dir) if filename.endswith(".pt")]
-    print(f"# Benchmarking with JFLEG dataset")
+    print(TITLE)
     if model_names:
         for model_name in model_names:
             model_path = os.path.join(model_dir, model_name)

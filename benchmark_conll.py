@@ -6,6 +6,11 @@ from src.utils import load_labels, load_model, read_m2, write_text, iterative_pr
 
 os.environ["TOKENIZERS_PARALLELISM"] = "false"
 
+TITLE = """
+##############
+# CoNLL-2014 #
+##############
+"""
 BENCHMARK = "conll"
 LABEL_PATH = "data/vocabs/labels.txt"
 SUBMODULE_PATH = os.path.abspath("m2scorer/")
@@ -46,7 +51,7 @@ def main(model_dir, label_path=LABEL_PATH, m2_path=BENCHMARK_DATA_PATH, max_iter
     m2_path = os.path.abspath(m2_path)
     model_dir = os.path.abspath(model_dir)
     model_names = [filename for filename in os.listdir(model_dir) if filename.endswith(".pt")]
-    print(f"# Benchmarking with CONLL-2014")
+    print(TITLE)
     if model_names:
         for model_name in model_names:
             model_path = os.path.join(model_dir, model_name)

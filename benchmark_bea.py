@@ -6,6 +6,11 @@ from src.utils import load_text, write_text, load_labels, load_model, iterative_
 
 os.environ["TOKENIZERS_PARALLELISM"] = "false"
 
+TITLE = """
+############
+# BEA-2014 #
+############
+"""
 BENCHMARK = "bea"
 LABEL_PATH = "data/vocabs/labels.txt"
 DATA_PATH = "data/processed/bea2019st/ABCN.test.bea19.orig"
@@ -39,6 +44,7 @@ def main(model_dir, label_path=LABEL_PATH, data_path=DATA_PATH, max_iter=10, for
     sentences = [clean_text(sent) for sent in sentences]
     label_vocab = load_labels(label_path, verbose=True)
     model_names = [filename for filename in os.listdir(model_dir) if filename.endswith(".pt")]
+    print(TITLE)
     if model_names:
         for model_name in model_names:
             model_path = os.path.join(model_dir, model_name)
