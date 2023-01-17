@@ -4,3 +4,6 @@
 [submodule "jfleg"]
 	path = jfleg
 	url = https://github.com/keisks/jfleg.git
+[submodule "m2scorer"]
+	path = m2scorer
+	url = https://github.com/nusnlp/m2scorer.git
